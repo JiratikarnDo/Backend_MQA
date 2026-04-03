@@ -1,13 +1,16 @@
 from fastapi import FastAPI
-from app.Interface.sql_db import dbEngine
+from app.Interface.sql_db import engine, base
+import app.models.masterdata
 
 app = FastAPI()
+
+base.metadata.create_all(bind=engine)
 
 @app.get("/")
 def root():
     return {"message": "backend is running"}
 
-@app.get("/mqaDB")
-def mqaDB():
-    with dbEngine.connect() as dbConnection:
+@app.get("/testDb")
+def testDb():
+    with engine.connect() as connection:
         return {"message": "database connected"}

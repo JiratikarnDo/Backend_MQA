@@ -9,15 +9,15 @@ databaseUrl = os.getenv("DATABASE_URL")
 if not databaseUrl:
     raise ValueError("DATABASE_URL is not set in .env")
 
-dbEngine = createEngine(databaseUrl)
+engine = createEngine(databaseUrl)
 
 sessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
-    bind=dbEngine
+    bind=engine
 )
 
-dbBase = declarativeBase()
+base = declarativeBase()
 
 def getDb():
     dbSession = sessionLocal()
