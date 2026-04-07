@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Google Login</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body style="padding: 50px; font-family: sans-serif;">
+    
+    <h2>จำลองการล็อกอินเพื่อเอา Token</h2>
+    
+    <div id="g_id_onload"
+         data-client_id="639931747326-nb2cokm997scuatpl5t52ojso4e4psgn.apps.googleusercontent.com"
+         data-callback="handleCredentialResponse">
+    </div>
+    <div class="g_id_signin" data-type="standard"></div>
+
+    <h3 style="margin-top: 30px;">ก๊อปปี้ Token ตรงนี้ไปใส่ใน Swagger:</h3>
+    <textarea id="token_display" rows="10" cols="100" style="padding: 10px;"></textarea>
+
+    <script>
+        function handleCredentialResponse(response) {
+            console.log("Encoded JWT ID token: " + response.credential);
+            document.getElementById("token_display").value = response.credential;
+        }
+    </script>
+</body>
+</html>
