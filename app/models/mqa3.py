@@ -1,138 +1,324 @@
-from pydantic import BaseModel
-from typing import List, Optional
-from datetime import date
+from sqlalchemy import Column, Integer, String, Text, DateTime, Date, ForeignKey
+from sqlalchemy.sql import func
+from app.Interface.sql_db import base
 
+# ===========================
+# MAIN TABLE
+# ===========================
+class MQA3(base):
+    __tablename__ = "mqa3"
 
-class mqa3section1(BaseModel):
-    courseCode: str  # รหัสวิชา
-    courseNameThai: str  # ชื่อรายวิชาภาษาไทย
-    courseNameEnglish: str  # ชื่อรายวิชาภาษาอังกฤษ
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+# ===========================
+# SECTION 1: Course Info
+# ===========================
+class MQA3Section1(base):
+    __tablename__ = "mqa3_section1"
 
-class mqa3section2(BaseModel):
-    credits: int  # จำนวนหน่วยกิต
-    creditsDetail: str  # รายละเอียดหน่วยกิต เช่น 3(3-0-6)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
+    course_code = Column(String(50), nullable=False)
+    course_name_thai = Column(String(255), nullable=False)
+    course_name_english = Column(String(255), nullable=False)
 
+# ===========================
+# SECTION 2: Credits
+# ===========================
+class MQA3Section2(base):
+    __tablename__ = "mqa3_section2"
 
-class mqa3section3(BaseModel):
-    curriculum: str  # หลักสูตร/สาขาวิชา
-    subjectType: str  # ประเภทของรายวิชา
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
+    credits = Column(Integer, nullable=False)
+    credits_detail = Column(String(255), nullable=False)
 
+# ===========================
+# SECTION 3: Curriculum
+# ===========================
+class MQA3Section3(base):
+    __tablename__ = "mqa3_section3"
 
-class mqa3section4(BaseModel):
-    teacherNames: List[str]  # รายชื่ออาจารย์ผู้สอน/ผู้รับผิดชอบรายวิชา
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
+    curriculum = Column(String(255), nullable=False)
+    subject_type = Column(String(100), nullable=False)
 
+# ===========================
+# SECTION 4: Teachers
+# ===========================
+class MQA3Section4(base):
+    __tablename__ = "mqa3_section4"
 
-class mqa3section5(BaseModel):
-    semester: int  # ภาคการศึกษา
-    schoolYear: int  # ปีการศึกษา
-    yearLevel: int  # ชั้นปี
-    group: int  # กลุ่มเรียน
-    studentCount: int  # จำนวนนักศึกษา
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
 
+class MQA3Section4TeacherNames(base):
+    __tablename__ = "mqa3_section4_teacher_names"
 
-class mqa3section6(BaseModel):
-    location: str  # สถานที่เรียน
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    section4_id = Column(Integer, ForeignKey("mqa3_section4.id", ondelete="CASCADE"), nullable=False)
+    teacher_name = Column(String(255), nullable=False)
 
+# ===========================
+# SECTION 5: Semester Info
+# ===========================
+class MQA3Section5(base):
+    __tablename__ = "mqa3_section5"
 
-class mqa3section7(BaseModel):
-    preSubject: Optional[str]   # รายวิชาที่ต้องเรียนมาก่อน
-    coSubject: Optional[str]   # รายวิชาที่ต้องเรียนพร้อมกัน
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
+    semester = Column(Integer, nullable=False)
+    school_year = Column(Integer, nullable=False)
+    year_level = Column(Integer, nullable=False)
+    group = Column(Integer, nullable=False)  # หมายเหตุ: group เป็นคำสงวนในบาง DB แต่ SQLAlchemy จะจัดการให้ตอนสร้างครับ
+    student_count = Column(Integer, nullable=False)
 
+# ===========================
+# SECTION 6: Location
+# ===========================
+class MQA3Section6(base):
+    __tablename__ = "mqa3_section6"
 
-class mqa3section8(BaseModel):
-    lastUpdatedDate: date  # วันที่จัดทำหรือปรับปรุงรายละเอียดรายวิชาครั้งล่าสุด
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
+    location = Column(String(255), nullable=False)
 
+# ===========================
+# SECTION 7: Pre/Co Subject
+# ===========================
+class MQA3Section7(base):
+    __tablename__ = "mqa3_section7"
 
-class mqa3section9(BaseModel):
-    subjectDescription: str  # คำอธิบายรายวิชา
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
+    pre_subject = Column(String(255), nullable=True)
+    co_subject = Column(String(255), nullable=True)
 
+# ===========================
+# SECTION 8: Last Updated
+# ===========================
+class MQA3Section8(base):
+    __tablename__ = "mqa3_section8"
 
-class mqa3section10(BaseModel):
-    subjectObjectives: List[str]  # วัตถุประสงค์ในการพัฒนา/ปรับปรุงรายวิชา
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
+    last_updated_date = Column(Date, nullable=False)
 
+# ===========================
+# SECTION 9: Description
+# ===========================
+class MQA3Section9(base):
+    __tablename__ = "mqa3_section9"
 
-class mqa3section11(BaseModel):
-    plos: List[str]  # ผลลัพธ์การเรียนรู้ของหลักสูตร (PLOs)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
+    subject_description = Column(Text, nullable=False)
 
+# ===========================
+# SECTION 10: Objectives
+# ===========================
+class MQA3Section10(base):
+    __tablename__ = "mqa3_section10"
 
-class mqa3section12(BaseModel):
-    clos: List[str]  # ผลลัพธ์การเรียนรู้ที่คาดหวังของรายวิชา (CLOs)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
 
+class MQA3Section10Objectives(base):
+    __tablename__ = "mqa3_section10_objectives"
 
-class mqa3section13(BaseModel):
-    lectureHours: str  # ชั่วโมงบรรยายต่อสัปดาห์
-    practiceHours: str  # ชั่วโมงฝึกปฏิบัติ/ภาคสนาม/ฝึกงานต่อสัปดาห์
-    selfStudyHours: str  # ชั่วโมงศึกษาด้วยตนเองต่อสัปดาห์
-    contact: str  # แนวทางและช่องทางการติดต่อกับนักศึกษา
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    section10_id = Column(Integer, ForeignKey("mqa3_section10.id", ondelete="CASCADE"), nullable=False)
+    objective = Column(Text, nullable=False)
 
+# ===========================
+# SECTION 11: PLOs
+# ===========================
+class MQA3Section11(base):
+    __tablename__ = "mqa3_section11"
 
-class mqa3section14Row(BaseModel):
-    clo: str  # CLO ของแถวนั้น
-    learning: str 
-    teaching: List[str]  # กลยุทธ์การสอนตาม CLO
-    evaluation: List[str]  # กลยุทธ์สำหรับวิธีการวัดและประเมินผลตาม CLO
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
 
+class MQA3Section11PLOs(base):
+    __tablename__ = "mqa3_section11_plos"
 
-class mqa3section14(BaseModel):
-    rows: List[mqa3section14Row]  # รายการข้อมูลแต่ละแถวของตารางข้อ 14
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    section11_id = Column(Integer, ForeignKey("mqa3_section11.id", ondelete="CASCADE"), nullable=False)
+    plo = Column(Text, nullable=False)
 
+# ===========================
+# SECTION 12: CLOs
+# ===========================
+class MQA3Section12(base):
+    __tablename__ = "mqa3_section12"
 
-class mqa3section15Row(BaseModel):
-    week: int  # สัปดาห์ที่
-    topic: str   # หัวข้อ/รายละเอียด
-    clo: List[str]  # CLOs ที่เกี่ยวข้อง
-    hours: int  # จำนวนชั่วโมง
-    activity: str # กิจกรรมการเรียนการสอน/สื่อที่ใช้
-    teacher: str # ผู้สอน
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
 
+class MQA3Section12CLOs(base):
+    __tablename__ = "mqa3_section12_clos"
 
-class mqa3section15(BaseModel):
-    rows: List[mqa3section15Row]  # รายการข้อมูลแต่ละแถวของแผนการสอน
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    section12_id = Column(Integer, ForeignKey("mqa3_section12.id", ondelete="CASCADE"), nullable=False)
+    clo = Column(Text, nullable=False)
 
+# ===========================
+# SECTION 13: Hours
+# ===========================
+class MQA3Section13(base):
+    __tablename__ = "mqa3_section13"
 
-class mqa3section16Row(BaseModel):
-    clo: str  # CLO ของแถวนั้น
-    learning: str # ผลการเรียนรู้
-    assessmentActivities: List[str]  # กิจกรรมการประเมินผลการเรียนรู้ของผู้เรียน
-    assessmentWeeks: str  # กำหนดการประเมิน (สัปดาห์ที่)
-    scorePercent: List[int]  # สัดส่วนของการประเมินผลเป็นเปอร์เซ็นต์
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
+    lecture_hours = Column(String(50), nullable=False)
+    practice_hours = Column(String(50), nullable=False)
+    self_study_hours = Column(String(50), nullable=False)
+    contact = Column(String(255), nullable=False)
 
+# ===========================
+# SECTION 14: CLO-Learning Map
+# ===========================
+class MQA3Section14(base):
+    __tablename__ = "mqa3_section14"
 
-class mqa3section16(BaseModel):
-    rows: List[mqa3section16Row]  # รายการข้อมูลแต่ละแถวของแผนการประเมิน
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
 
+class MQA3Section14Rows(base):
+    __tablename__ = "mqa3_section14_rows"
 
-class mqa3section17(BaseModel):
-    agreements: List[str]  # ข้อตกลงร่วมกันระหว่างผู้เรียนและผู้สอน
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    section14_id = Column(Integer, ForeignKey("mqa3_section14.id", ondelete="CASCADE"), nullable=False)
+    clo = Column(String(100), nullable=False)
+    learning = Column(Text, nullable=False)
 
+class MQA3Section14RowTeaching(base):
+    __tablename__ = "mqa3_section14_row_teaching"
 
-class mqa3section18(BaseModel):
-    courseIntegration: List[str]  # แผนการบูรณาการระหว่างรายวิชา
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    section14_row_id = Column(Integer, ForeignKey("mqa3_section14_rows.id", ondelete="CASCADE"), nullable=False)
+    teaching = Column(Text, nullable=False)
 
+class MQA3Section14RowEvaluation(base):
+    __tablename__ = "mqa3_section14_row_evaluation"
 
-class mqa3section19(BaseModel):
-    textbooks: List[str]  # หนังสือและเอกสารประกอบการสอน
-    onlineSources: List[str]  # เว็บไซต์และแหล่งข้อมูลออนไลน์
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    section14_row_id = Column(Integer, ForeignKey("mqa3_section14_rows.id", ondelete="CASCADE"), nullable=False)
+    evaluation = Column(Text, nullable=False)
 
+# ===========================
+# SECTION 15: Weekly Schedule
+# ===========================
+class MQA3Section15(base):
+    __tablename__ = "mqa3_section15"
 
-class MQA3(BaseModel):
-    section1: mqa3section1  
-    section2: mqa3section2  
-    section3: mqa3section3  
-    section4: mqa3section4  
-    section5: mqa3section5  
-    section6: mqa3section6  
-    section7: mqa3section7  
-    section8: mqa3section8  
-    section9: mqa3section9  
-    section10: mqa3section10  
-    section11: mqa3section11  
-    section12: mqa3section12  
-    section13: mqa3section13  
-    section14: mqa3section14  
-    section15: mqa3section15  
-    section16: mqa3section16  
-    section17: mqa3section17  
-    section18: mqa3section18  
-    section19: mqa3section19  
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
+
+class MQA3Section15Rows(base):
+    __tablename__ = "mqa3_section15_rows"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    section15_id = Column(Integer, ForeignKey("mqa3_section15.id", ondelete="CASCADE"), nullable=False)
+    week = Column(Integer, nullable=False)
+    topic = Column(Text, nullable=False)
+    hours = Column(Integer, nullable=False)
+    activity = Column(Text, nullable=False)
+    teacher = Column(String(255), nullable=False)
+
+class MQA3Section15RowCLOs(base):
+    __tablename__ = "mqa3_section15_row_clos"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    section15_row_id = Column(Integer, ForeignKey("mqa3_section15_rows.id", ondelete="CASCADE"), nullable=False)
+    clo = Column(String(100), nullable=False)
+
+# ===========================
+# SECTION 16: Assessment
+# ===========================
+class MQA3Section16(base):
+    __tablename__ = "mqa3_section16"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
+
+class MQA3Section16Rows(base):
+    __tablename__ = "mqa3_section16_rows"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    section16_id = Column(Integer, ForeignKey("mqa3_section16.id", ondelete="CASCADE"), nullable=False)
+    clo = Column(String(100), nullable=False)
+    learning = Column(Text, nullable=False)
+    assessment_weeks = Column(String(100), nullable=False)
+
+class MQA3Section16RowActivities(base):
+    __tablename__ = "mqa3_section16_row_activities"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    section16_row_id = Column(Integer, ForeignKey("mqa3_section16_rows.id", ondelete="CASCADE"), nullable=False)
+    activity = Column(Text, nullable=False)
+
+class MQA3Section16RowScorePercents(base):
+    __tablename__ = "mqa3_section16_row_score_percents"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    section16_row_id = Column(Integer, ForeignKey("mqa3_section16_rows.id", ondelete="CASCADE"), nullable=False)
+    score_percent = Column(Integer, nullable=False)
+
+# ===========================
+# SECTION 17: Agreements
+# ===========================
+class MQA3Section17(base):
+    __tablename__ = "mqa3_section17"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
+
+class MQA3Section17Agreements(base):
+    __tablename__ = "mqa3_section17_agreements"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    section17_id = Column(Integer, ForeignKey("mqa3_section17.id", ondelete="CASCADE"), nullable=False)
+    agreement = Column(Text, nullable=False)
+
+# ===========================
+# SECTION 18: Course Integration
+# ===========================
+class MQA3Section18(base):
+    __tablename__ = "mqa3_section18"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
+
+class MQA3Section18Integrations(base):
+    __tablename__ = "mqa3_section18_integrations"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    section18_id = Column(Integer, ForeignKey("mqa3_section18.id", ondelete="CASCADE"), nullable=False)
+    course_integration = Column(Text, nullable=False)
+
+# ===========================
+# SECTION 19: References
+# ===========================
+class MQA3Section19(base):
+    __tablename__ = "mqa3_section19"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    mqa3_id = Column(Integer, ForeignKey("mqa3.id", ondelete="CASCADE"), nullable=False)
+
+class MQA3Section19Textbooks(base):
+    __tablename__ = "mqa3_section19_textbooks"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    section19_id = Column(Integer, ForeignKey("mqa3_section19.id", ondelete="CASCADE"), nullable=False)
+    textbook = Column(Text, nullable=False)
+
+class MQA3Section19OnlineSources(base):
+    __tablename__ = "mqa3_section19_online_sources"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    section19_id = Column(Integer, ForeignKey("mqa3_section19.id", ondelete="CASCADE"), nullable=False)
+    online_source = Column(Text, nullable=False)
