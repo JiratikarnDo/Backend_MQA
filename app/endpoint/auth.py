@@ -9,7 +9,7 @@ from jose import jwt
 
 # Import ของที่โด้ทำไว้แล้ว
 from app.Interface.sql_db import getDb
-from app.models.user import User
+from app.models.users import User
 from app.endpoint.masterdata import fetch_from_rmutto 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])

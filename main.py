@@ -1,10 +1,13 @@
+import os
+
 from fastapi import Depends, FastAPI
 from sqlmodel import Session
 from sqlalchemy import text
 from app.Interface.sql_db import engine, base, getDb
 from app.endpoint.masterdata import router as masterdata_router
 from app.endpoint.auth import router as auth_router
-from app.models.mqa3 import *
+
+# from app.models.mqa3 import *
 
 app = FastAPI()
 
@@ -26,4 +29,4 @@ def test_database_connection(db: Session = Depends(getDb)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host=os.getenv("HOST"), port=os.getenv("PORT"))
