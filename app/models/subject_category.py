@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func, Text
 from sqlalchemy.orm import relationship
 from app.Interface.sql_db import base
-from app.models.timestamp import TimestampMixin
+from app.models.base import TimestampMixin
 
 class SubjectCategory(base, TimestampMixin):
     __tablename__ = "subject_categories"
@@ -18,3 +18,5 @@ class SubjectSubGroup(base, TimestampMixin):
     category_id = Column(Integer, ForeignKey("subject_categories.id", ondelete="CASCADE"))
     
     category = relationship("SubjectCategory", back_populates="sub_groups")
+
+

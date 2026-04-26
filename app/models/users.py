@@ -4,7 +4,7 @@ from sqlmodel import ForeignKey
 from app.Interface.sql_db import base
 from sqlalchemy.orm import relationship
 
-from app.models.timestamp import TimestampMixin
+from app.models.base import TimestampMixin
 
 class Users(base, TimestampMixin):
     __tablename__ = "users"

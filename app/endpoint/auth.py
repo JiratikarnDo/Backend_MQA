@@ -7,10 +7,11 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from jose import jwt
 from app.Interface.sql_db import getDb
-from app.dependencies.auth import create_access_token
+from app.dependencies.auth import create_access_token, get_current_user
 from app.models.users import Users
 from app.endpoint.masterdata import fetch_from_rmutto
 from app.models.organization import Departments, Faculties
+from schemas.user import UserProfileResponse
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -90,3 +91,11 @@ async def google_login(request: GoogleLoginRequest, db: Session = Depends(getDb)
         raise HTTPException(status_code=401, detail="Token จาก Google ไม่ถูกต้อง หรือหมดอายุ")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+    
+@router.get("/me", response_model=UserProfileResponse)
+async def get_my_profile(current_user: Users = Depends(get_current_user)):
+    """
+    ดึงข้อมูลเจ้าของ Token เพื่อเอาไปโชว์โปรไฟล์หน้าเว็บ
+    """
+    return current_user

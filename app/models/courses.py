@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func, Text
 from sqlalchemy.orm import relationship
 from app.Interface.sql_db import base
-from app.models.timestamp import TimestampMixin
+from app.models.base import TimestampMixin
 
 class Courses(base, TimestampMixin):
     __tablename__ = "courses"
