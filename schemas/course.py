@@ -1,0 +1,70 @@
+from pydantic import BaseModel, ConfigDict, computed_field
+from typing import Optional
+from datetime import datetime
+
+
+class CourseBase(BaseModel):
+    course_code: Optional[str] = None
+    course_level: Optional[str] = None
+    course_name_th: Optional[str] = None
+    course_name_en: Optional[str] = None
+
+    credit_total: Optional[int]
+    credit_lecture: Optional[int]
+    credit_lab: Optional[int]
+    credit_self_study: Optional[int]
+
+    description_thai: Optional[str] = None
+    description_english: Optional[str] = None
+    prerequisite: Optional[str] = None
+    corequisite: Optional[str] = None
+
+    category_id: Optional[int] = None
+    sub_group_id: Optional[int] = None
+    subject_line: Optional[str] = None
+
+
+class CourseReponseAll(BaseModel):
+    id: int
+    course_code: Optional[str] = None
+    course_level: Optional[str] = None
+    course_name_th: Optional[str] = None
+    course_name_en: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CourseCreate(CourseBase):
+    department_id: int
+
+
+class CourseUpdate(CourseBase):
+    department_id: Optional[int] = None
+
+
+class CourseResponse(CourseBase):
+    id: int
+    department_id: int
+    created_at: datetime
+    update_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CourseUpdate(BaseModel):
+    course_code: Optional[str] = None
+    course_level: Optional[str] = None
+    course_name_th: Optional[str] = None
+    course_name_en: Optional[str] = None
+    category_id: Optional[int] = None
+    sub_group_id: Optional[int] = None
+    subject_line: Optional[str] = None
+    credit_total: Optional[int] = None
+    credit_lecture: Optional[int] = None
+    credit_lab: Optional[int] = None
+    credit_self_study: Optional[int] = None
+    description_thai: Optional[str] = None
+    description_english: Optional[str] = None
+    prerequisite: Optional[str] = None
+    corequisite: Optional[str] = None
+    department_id: Optional[int] = None

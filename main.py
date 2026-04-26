@@ -1,16 +1,41 @@
+import os
+
 from fastapi import Depends, FastAPI
 from sqlmodel import Session
 from sqlalchemy import text
 from app.Interface.sql_db import engine, base, getDb
 from app.endpoint.masterdata import router as masterdata_router
 from app.endpoint.auth import router as auth_router
-from app.models.mqa3 import *
+from app.endpoint.course import router as course_router
+from app.endpoint.subject_category import router as subject_category_router
+from app.endpoint.department import router as department_router
+from app.endpoint.curriculum import router as curriculum_router
+from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
+import app.models
+
+# from app.models.mqa3 import *
 
 app = FastAPI()
+
+origins_raw = os.getenv("FRONEND_URL")
+origins = origins_raw.split(",") if origins_raw else []
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 base.metadata.create_all(bind=engine)
 app.include_router(masterdata_router)
 app.include_router(auth_router)
+app.include_router(course_router)
+app.include_router(subject_category_router)
+app.include_router(department_router)
+app.include_router(curriculum_router)
 
 @app.get("/")
 def root():
@@ -25,5 +50,11 @@ def test_database_connection(db: Session = Depends(getDb)):
         return {"status": "error", "message": f"เชื่อมต่อไม่สำเร็จ: {str(e)}"}
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port_env = os.getenv("PORT")
+
+    
+    uvicorn.run(
+        "main:app",
+        host=os.getenv("HOST"),
+        port=int(port_env)
+    )
