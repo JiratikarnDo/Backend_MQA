@@ -1,9 +1,9 @@
 import os
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 from app.Interface.sql_db import getDb
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import check_admin_staff_role, get_current_user
 from app.endpoint.auth import GoogleLoginRequest
 from app.models.courses import Courses
 from app.models.users import Users
@@ -14,20 +14,21 @@ router = APIRouter(prefix="/course", tags=["Course"])
 
 
 @router.get("/", response_model=List[CourseReponseAll])
-async def get_my_department_courses(
-    db: Session = Depends(getDb), current_user: Users = Depends(get_current_user)
+async def get_courses(
+    db: Session = Depends(getDb),
+    current_user=Depends(get_current_user),
+    page: int = Query(1, ge=1, description="เลขหน้า"),
+    size: int = Query(10, ge=1, le=100, description="จำนวนข้อมูลต่อหน้า"),
 ):
+    query = db.query(Courses)
 
-    if current_user.role not in ["admin", "staff"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
-        )
-    courses = (
-        db.query(Courses)
-        .filter(Courses.department_id == current_user.department_id)
-        .all()
-    )
+    if current_user.role.lower() not in ["admin", "staff"]:
+        query = query.filter(Courses.department_id == current_user.department_id)
+
+    offset = (page - 1) * size
+
+    courses = query.order_by(Courses.course_code.asc()).offset(offset).limit(size).all()
+
     return courses
 
 
@@ -59,23 +60,30 @@ async def get_course_by_id(
     return course
 
 
-@router.post("/", response_model=CourseResponse)
+@router.post("/")
 async def create_course(
-    course_data: CourseCreate,
+    data: CourseCreate,
     db: Session = Depends(getDb),
-    current_user: Users = Depends(get_current_user),
+    current_user=Depends(check_admin_staff_role),
 ):
-    if current_user.role not in ["admin", "staff"]:
+    existing_course = (
+        db.query(Courses).filter(Courses.course_code == data.course_code).first()
+    )
+
+    if existing_course:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
+            status_code=400,
+            detail=f"รหัสวิชา {data.course_code} มีอยู่ในระบบแล้ว ไม่สามารถสร้างซ้ำได้",
         )
 
-    new_course = Courses(**course_data.model_dump())
+    new_course = Courses(**data.dict())
     db.add(new_course)
-    db.commit()
-    db.refresh(new_course)
-    return new_course
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="เกิดข้อผิดพลาดในการบันทึกข้อมูล")
+
 
 @router.put("/{course_id}", response_model=CourseUpdate)
 async def update_course(
@@ -95,22 +103,25 @@ async def update_course(
     if not db_course:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="ไม่พบข้อมูลวิชาที่ต้องการแก้ไข"
+            detail="ไม่พบข้อมูลวิชาที่ต้องการแก้ไข",
         )
-    
+
     update_data = course_data.model_dump(exclude_unset=True)
 
     for key, value in update_data.items():
         setattr(db_course, key, value)
-    
+
     try:
         db.commit()
         db.refresh(db_course)
         return db_course
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาดในการอัปเดต: {str(e)}")
-    
+        raise HTTPException(
+            status_code=500, detail=f"เกิดข้อผิดพลาดในการอัปเดต: {str(e)}"
+        )
+
+
 @router.delete("/{course_id}")
 async def delete_course(
     course_id: int,
@@ -127,10 +138,9 @@ async def delete_course(
 
     if not db_course:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="ไม่พบข้อมูลวิชาที่ต้องการลบ"
+            status_code=status.HTTP_404_NOT_FOUND, detail="ไม่พบข้อมูลวิชาที่ต้องการลบ"
         )
-    
+
     try:
         db.delete(db_course)
         db.commit()
@@ -138,5 +148,3 @@ async def delete_course(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาดในการลบ: {str(e)}")
-
-

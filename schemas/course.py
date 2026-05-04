@@ -23,6 +23,29 @@ class CourseBase(BaseModel):
     sub_group_id: Optional[int] = None
     subject_line: Optional[str] = None
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "course_code": "CP102",
+                "course_level": "ปริญญาตรี",
+                "course_name_th": "โครงสร้างข้อมูลและอัลกอริทึม",
+                "course_name_en": "Data Structures and Algorithms",
+                "credit_total": 3,
+                "credit_lecture": 3,
+                "credit_lab": 0,
+                "credit_self_study": 6,
+                "description_thai": "ศึกษาโครงสร้างข้อมูลและประสิทธิภาพอัลกอริทึม",
+                "description_english": "Study data structures and algorithm efficiency",
+                "prerequisite": "CP101",
+                "corequisite": "-",
+                "category_id": 1,
+                "sub_group_id": 1,
+                "subject_line": "วิชาเฉพาะด้าน",
+                "department_id": 1
+            }
+        }
+    )
+
 
 class CourseReponseAll(BaseModel):
     id: int

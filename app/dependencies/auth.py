@@ -10,7 +10,7 @@ from app.models.users import Users
 
 security = HTTPBearer()
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+SECRET_KEY = os.getenv("MY_MQA_SUPER_SECRET")
 ALGORITHM = os.getenv("JWT_ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
@@ -49,3 +49,11 @@ async def get_current_user(
         raise credentials_exception
         
     return user
+
+def check_admin_staff_role(current_user = Depends(get_current_user)): 
+    if current_user.role not in ["admin", "staff"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
+        )
+    return current_user
