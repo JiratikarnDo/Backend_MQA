@@ -4,12 +4,14 @@ from fastapi import Depends, FastAPI
 from sqlmodel import Session
 from sqlalchemy import text
 from app.Interface.sql_db import engine, base, getDb
+from app.endpoint.plo import router as plo_router
 from app.endpoint.masterdata import router as masterdata_router
 from app.endpoint.auth import router as auth_router
 from app.endpoint.course import router as course_router
 from app.endpoint.subject_category import router as subject_category_router
 from app.endpoint.department import router as department_router
 from app.endpoint.curriculum import router as curriculum_router
+from app.endpoint.tqf_deadlines import router as tqf_deadlines_router
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import app.models
@@ -36,6 +38,9 @@ app.include_router(course_router)
 app.include_router(subject_category_router)
 app.include_router(department_router)
 app.include_router(curriculum_router)
+app.include_router(plo_router)
+app.include_router(tqf_deadlines_router)
+
 
 @app.get("/")
 def root():
