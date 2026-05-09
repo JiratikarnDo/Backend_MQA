@@ -60,7 +60,7 @@ async def get_course_by_id(
     return course
 
 
-@router.post("/")
+@router.post("/", status_code=201)
 async def create_course(
     data: CourseCreate,
     db: Session = Depends(getDb),
@@ -76,13 +76,28 @@ async def create_course(
             detail=f"รหัสวิชา {data.course_code} มีอยู่ในระบบแล้ว ไม่สามารถสร้างซ้ำได้",
         )
 
-    new_course = Courses(**data.dict())
+    new_course = Courses(**data.model_dump()) 
     db.add(new_course)
+    
     try:
         db.commit()
+        db.refresh(new_course)
+        
+        return {
+            "status": "success",
+            "message": "เพิ่มรายวิชาสำเร็จเรียบร้อยแล้ว!",
+            "data": {
+                "id": new_course.id,
+                "course_code": new_course.course_code,
+                "course_name_th": new_course.course_name_th
+            }
+        }
+        
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail="เกิดข้อผิดพลาดในการบันทึกข้อมูล")
+        # พ่น error จริงออก terminal ไว้ debug
+        print(f"Error logic: {str(e)}") 
+        raise HTTPException(status_code=500, detail="เกิดข้อผิดพลาดทางเทคนิคในการบันทึกข้อมูล")
 
 
 @router.put("/{course_id}", response_model=CourseUpdate)
