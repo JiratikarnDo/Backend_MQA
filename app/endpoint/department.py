@@ -15,7 +15,7 @@ router = APIRouter(prefix="/departments", tags=["Departments"])
 async def get_all_departments(db: Session = Depends(getDb),
                               current_user: Users = Depends(get_current_user)):
     
-    if current_user.role not in ["admin", "staff"]:
+    if current_user.role not in ["admin", "staff", "headmajor"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
