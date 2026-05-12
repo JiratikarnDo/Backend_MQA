@@ -54,7 +54,6 @@ async def create_tqf3(data: TQF3Create,
             location=data.location,
             pre_requisite=data.pre_requisite,
             co_requisite=data.co_requisite,
-            updated_at=data.updated_at,
             course_description=data.course_description,
             objectives=data.objectives,
             plo_mapping=data.plo_mapping,
@@ -195,7 +194,6 @@ async def update_tqf3(
         existing_tqf3.location = data.location
         existing_tqf3.pre_requisite = data.pre_requisite
         existing_tqf3.co_requisite = data.co_requisite
-        existing_tqf3.updated_at = data.updated_at
         existing_tqf3.course_description = data.course_description
         existing_tqf3.objectives = data.objectives
         existing_tqf3.plo_mapping = data.plo_mapping
@@ -207,6 +205,8 @@ async def update_tqf3(
         existing_tqf3.integration_detail = data.integration_detail
         existing_tqf3.main_textbooks = data.main_textbooks
         existing_tqf3.references = data.references
+        existing_tqf3.updated_at = data.updated_at
+
 
         db.query(TQF3Instructor).filter(TQF3Instructor.tqf3_id == tqf3_id).delete()
         db.query(TQF3CLO).filter(TQF3CLO.tqf3_id == tqf3_id).delete()
@@ -239,6 +239,13 @@ async def update_tqf3(
 
     except Exception as e:
         db.rollback()
+
+        if "DataError" in str(e) or "1264" in str(e):
+            raise HTTPException(
+                status_code=400, 
+                detail="ข้อมูลตัวเลขไม่ถูกต้อง กรุณาตรวจสอบปีการศึกษาหรือจำนวนนักศึกษา"
+            )
+
         raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาดในการอัปเดต: {str(e)}")
     
 
@@ -252,9 +259,10 @@ async def submit_tqf3(
     if not target_tqf3:
         raise HTTPException(status_code=404, detail="ไม่พบข้อมูล มคอ. 3")
 
-    if target_tqf3.creator_id != current_user.id and current_user.role.lower() != "admin" or "staff":
-        raise HTTPException(status_code=403, detail="คุณไม่ใช่เจ้าของเอกสารใบนี้")
-
+    if current_user.role.lower() != "admin" or "staff":
+        if target_tqf3.creator_id != current_user.id:
+            raise HTTPException(status_code=403, detail="คุณไม่ใช่เจ้าของเอกสารใบนี้")
+        
     if target_tqf3.status != "draft":
         raise HTTPException(status_code=400, detail="เอกสารนี้ถูกส่งเข้าระบบไปแล้ว ไม่สามารถส่งซ้ำได้")
 

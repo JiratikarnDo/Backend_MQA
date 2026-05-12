@@ -25,7 +25,6 @@ class TQF3Main(base):
     location = Column(Text)
     pre_requisite = Column(Text, default="-")
     co_requisite = Column(Text, default="-")
-    updated_at = Column(Date)
     course_description = Column(Text)
     objectives = Column(Text)
     plo_mapping = Column(Text)
