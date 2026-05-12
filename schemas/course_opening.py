@@ -164,3 +164,7 @@ class CourseOpeningDetailResponse(CourseOpeningSummaryResponse):
 
     requested_courses: list[RequestedCourseItemRead] 
     responsible_persons: list[ResponsiblePersonRead]
+
+class DeanActionRequest(BaseModel):
+    status: str 
+    comment: Optional[str] = None

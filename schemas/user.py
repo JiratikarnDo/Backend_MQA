@@ -11,3 +11,12 @@ class UserProfileResponse(BaseModel):
     department: Optional[DepartmentResponse] = None
     
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserResponse(BaseModel):
+    id: int
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    role: str
+
+    model_config = {"from_attributes": True}

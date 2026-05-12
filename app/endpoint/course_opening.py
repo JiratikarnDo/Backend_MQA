@@ -1,3 +1,4 @@
+from datetime import date
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
@@ -5,7 +6,7 @@ from app.Interface.sql_db import getDb
 from app.dependencies.auth import get_current_user
 from app.models.course_openting import CourseOpeningRequest, RequestedCourseItem, CurriculumResponsiblePerson
 from app.models.courses import Courses
-from schemas.course_opening import CourseOpeningCreate, CourseOpeningDetailResponse, CourseOpeningSummaryResponse
+from schemas.course_opening import CourseOpeningCreate, CourseOpeningDetailResponse, CourseOpeningSummaryResponse, DeanActionRequest
 
 router = APIRouter(prefix="/course-opening", tags=["Course Opening"])
 
@@ -80,7 +81,7 @@ async def get_all_opening_requests(
 ):
     query = db.query(CourseOpeningRequest)
 
-    if current_user.role.lower() not in ["admin", "staff","headMajo"]:
+    if current_user.role.lower() not in ["admin", "staff","headMajor"]:
         query = query.filter(CourseOpeningRequest.department_id == current_user.department_id)
 
     offset = (page - 1) * limit
@@ -103,7 +104,7 @@ async def get_opening_request_by_id(
         raise HTTPException(status_code=404, detail="ไม่พบใบคำร้องที่ระบุ")
 
     # 🛡️ Security: เช็คสิทธิ์การเข้าถึง
-    if current_user.role.lower() not in ["admin", "staff","headMajo"] and \
+    if current_user.role.lower() not in ["admin", "staff","headMajor"] and \
        result.department_id != current_user.department_id:
         raise HTTPException(status_code=403, detail="คุณไม่มีสิทธิ์ดูข้อมูลของภาควิชาอื่น")
 
@@ -121,7 +122,7 @@ async def update_opening_request(
     if not existing_req:
         raise HTTPException(status_code=404, detail="ไม่พบใบคำร้องที่ต้องการแก้ไข")
         
-    if current_user.role.lower() not in ["admin", "staff", "headMajo"] and \
+    if current_user.role.lower() not in ["admin", "staff", "headMajor"] and \
        existing_req.department_id != current_user.department_id:
         raise HTTPException(status_code=403, detail="คุณไม่มีสิทธิ์แก้ไขคำร้องของภาควิชาอื่น")
 
@@ -187,7 +188,7 @@ async def delete_opening_request(
     if not existing_req:
         raise HTTPException(status_code=404, detail="ไม่พบใบคำร้องที่ต้องการลบ")
         
-    if current_user.role.lower() not in ["admin", "staff","headMajo"] and \
+    if current_user.role.lower() not in ["admin", "staff","headMajor"] and \
        existing_req.department_id != current_user.department_id:
         raise HTTPException(status_code=403, detail="คุณไม่มีสิทธิ์ลบคำร้องของภาควิชาอื่น")
 
@@ -199,3 +200,55 @@ async def delete_opening_request(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Delete Error: {str(e)}")
+    
+
+@router.patch("/{request_id}/dean-approval")
+async def dean_approve_request(
+    request_id: int,
+    action: DeanActionRequest,
+    db: Session = Depends(getDb),
+    current_user = Depends(get_current_user)
+):
+
+    if current_user.role.lower() not in ["dean", "admin","staff","headMajor"]:
+        raise HTTPException(
+            status_code=403, 
+            detail="คุณไม่มีสิทธิ์ดำเนินการในฐานะคณบดี"
+        )
+
+    request_item = db.query(CourseOpeningRequest).filter(CourseOpeningRequest.id == request_id).first()
+    
+    if not request_item:
+        raise HTTPException(status_code=404, detail="ไม่พบใบคำร้องที่ระบุ")
+
+    try:
+        if action.status == "approved":
+            request_item.status = "approved"
+            request_item.dean_name = f"{current_user.first_name} {current_user.last_name}"
+            request_item.dean_signed = date.today()
+            message = "อนุมัติใบคำร้องเรียบร้อยแล้ว"
+            
+        elif action.status == "rejected":
+            if not action.comment:
+                raise HTTPException(status_code=400, detail="กรุณาระบุเหตุผลที่ไม่ไม่อนุมัติ")
+            request_item.status = "rejected_by_dean"
+            request_item.note = f"คณบดีไม่อนุมัติเนื่องจาก: {action.comment}"
+            message = "ตีกลับใบคำร้องเรียบร้อยแล้ว"
+        
+        else:
+            raise HTTPException(status_code=400, detail="สถานะไม่ถูกต้อง (ต้องเป็น approved หรือ rejected)")
+
+        db.commit()
+        return {
+            "status": "success",
+            "message": message,
+            "data": {
+                "request_id": request_id,
+                "new_status": request_item.status,
+                "signed_by": request_item.dean_name
+            }
+        }
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาด: {str(e)}")

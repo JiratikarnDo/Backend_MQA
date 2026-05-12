@@ -22,7 +22,7 @@ async def get_courses(
 ):
     query = db.query(Courses)
 
-    if current_user.role.lower() not in ["admin", "staff"]:
+    if current_user.role.lower() not in ["admin", "staff","headMajor"]:
         query = query.filter(Courses.department_id == current_user.department_id)
 
     offset = (page - 1) * size
@@ -38,7 +38,7 @@ async def get_course_by_id(
     db: Session = Depends(getDb),
     current_user: Users = Depends(get_current_user),
 ):
-    if current_user.role not in ["admin", "staff"]:
+    if current_user.role not in ["admin", "staff","headMajor"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
@@ -107,7 +107,7 @@ async def update_course(
     db: Session = Depends(getDb),
     current_user: Users = Depends(get_current_user),
 ):
-    if current_user.role not in ["admin", "staff"]:
+    if current_user.role not in ["admin", "staff", "headMajor"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
