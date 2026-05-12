@@ -65,7 +65,10 @@ async def create_tqf3(data: TQF3Create,
             agreements=data.agreements,
             integration_detail=data.integration_detail,
             main_textbooks=data.main_textbooks,
-            references=data.references
+            references=data.references,
+            creator_id=current_user.id,
+            department_id=current_user.department_id,
+            status="draft",
         )
         db.add(new_tqf3)
         db.flush()
@@ -158,14 +161,30 @@ async def update_tqf3(
         raise HTTPException(status_code=404, detail="ไม่พบข้อมูล มคอ. 3 ที่ต้องการแก้ไข")
 
     user_role = current_user.role.lower()
-    
-    if user_role == "admin":
-        pass
-    elif user_role == "staff":
+
+    if user_role in ["admin", "staff"]:
+        if existing_tqf3.status != "draft":
+            raise HTTPException(
+                status_code=400, 
+                detail="ไม่สามารถแก้ไขได้ เนื่องจากเอกสารถูกส่งไปให้เจ้าหน้าที่แล้ว"
+            )   
+        
         if existing_tqf3.department_id != current_user.department_id:
             raise HTTPException(status_code=403, detail="คุณไม่มีสิทธิ์แก้ไขข้อมูล มคอ. 3 ของสาขาอื่น")
+            
+        if existing_tqf3.creator_id != current_user.id:
+            raise HTTPException(status_code=403, detail="แก้ไขได้เฉพาะเอกสารที่คุณสร้างเท่านั้น")
+        
     else:
         raise HTTPException(status_code=403, detail="บทบาทของคุณไม่ได้รับอนุญาตให้แก้ไขข้อมูลนี้")
+    
+    course_master = db.query(Courses).filter(Courses.id == data.course_id).first()
+    
+    if not course_master:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"ไม่พบรายวิชารหัส ID: {data.course_id} ในระบบ กรุณาตรวจสอบอีกครั้ง"
+        )
 
     try:
         existing_tqf3.semester = data.semester
@@ -215,10 +234,81 @@ async def update_tqf3(
             for eval_item in data.evaluation_plans:
                 db.add(TQF3Evaluation(tqf3_id=tqf3_id, activity=eval_item.activity, clo_number=eval_item.clo_number, evaluation_week=eval_item.evaluation_week, proportion_percent=eval_item.proportion_percent))
 
-        # 5. บันทึกการเปลี่ยนแปลง
         db.commit()
         return {"status": "success", "message": "อัปเดตข้อมูล มคอ. 3 เรียบร้อยแล้ว"}
 
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาดในการอัปเดต: {str(e)}")
+    
+
+@router.patch("/{tqf3_id}/submit")
+async def submit_tqf3(
+    tqf3_id: int, 
+    db: Session = Depends(getDb),
+    current_user = Depends(get_current_user)
+):
+    target_tqf3 = db.query(TQF3Main).filter(TQF3Main.id == tqf3_id).first()
+    if not target_tqf3:
+        raise HTTPException(status_code=404, detail="ไม่พบข้อมูล มคอ. 3")
+
+    if target_tqf3.creator_id != current_user.id and current_user.role.lower() != "admin" or "staff":
+        raise HTTPException(status_code=403, detail="คุณไม่ใช่เจ้าของเอกสารใบนี้")
+
+    if target_tqf3.status != "draft":
+        raise HTTPException(status_code=400, detail="เอกสารนี้ถูกส่งเข้าระบบไปแล้ว ไม่สามารถส่งซ้ำได้")
+
+    try:
+        target_tqf3.status = "pending"  
+        
+        db.commit()
+        return {
+            "status": "success", 
+            "message": "ส่งเอกสาร มคอ. 3 เรียบร้อยแล้ว",
+            "new_status": target_tqf3.status
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาด: {str(e)}")
+    
+@router.delete("/{tqf3_id}")
+async def delete_tqf3(
+    tqf3_id: int, 
+    db: Session = Depends(getDb),
+    current_user = Depends(get_current_user)
+):
+    target_tqf3 = db.query(TQF3Main).filter(TQF3Main.id == tqf3_id).first()
+    
+    if not target_tqf3:
+        raise HTTPException(status_code=404, detail="ไม่พบข้อมูล มคอ. 3 ที่ต้องการลบ")
+
+    user_role = current_user.role.lower()
+    
+    if user_role in ["admin", "staff"]:
+        if target_tqf3.status != "draft":
+                raise HTTPException(
+                    status_code=400, 
+                    detail="ไม่สามารถลบได้ เนื่องจากเอกสารถูกส่งเข้าระบบไปแล้ว"
+            )
+            
+        if target_tqf3.department_id != current_user.department_id:
+                raise HTTPException(
+                    status_code=403, 
+                    detail="คุณไม่มีสิทธิ์ลบข้อมูล มคอ. 3 ของสาขาอื่น"
+            )            
+    else:
+        raise HTTPException(status_code=403, detail="บทบาทของคุณไม่ได้รับอนุญาตให้ลบข้อมูลนี้")
+
+    try:
+        db.delete(target_tqf3)
+        db.commit()
+        
+        return {
+            "status": "success", 
+            "message": f"ลบข้อมูล มคอ. 3 (ID: {tqf3_id}) และรายการย่อยเรียบร้อยแล้ว"
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาดในการลบ: {str(e)}")
+    

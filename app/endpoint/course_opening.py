@@ -81,7 +81,7 @@ async def get_all_opening_requests(
 ):
     query = db.query(CourseOpeningRequest)
 
-    if current_user.role.lower() not in ["admin", "staff","headMajor"]:
+    if current_user.role.lower() not in ["admin", "staff","headmajor"]:
         query = query.filter(CourseOpeningRequest.department_id == current_user.department_id)
 
     offset = (page - 1) * limit
@@ -104,7 +104,7 @@ async def get_opening_request_by_id(
         raise HTTPException(status_code=404, detail="ไม่พบใบคำร้องที่ระบุ")
 
     # 🛡️ Security: เช็คสิทธิ์การเข้าถึง
-    if current_user.role.lower() not in ["admin", "staff","headMajor"] and \
+    if current_user.role.lower() not in ["admin", "staff","headmajor"] and \
        result.department_id != current_user.department_id:
         raise HTTPException(status_code=403, detail="คุณไม่มีสิทธิ์ดูข้อมูลของภาควิชาอื่น")
 
@@ -122,7 +122,7 @@ async def update_opening_request(
     if not existing_req:
         raise HTTPException(status_code=404, detail="ไม่พบใบคำร้องที่ต้องการแก้ไข")
         
-    if current_user.role.lower() not in ["admin", "staff", "headMajor"] and \
+    if current_user.role.lower() not in ["admin", "staff", "headmajor"] and \
        existing_req.department_id != current_user.department_id:
         raise HTTPException(status_code=403, detail="คุณไม่มีสิทธิ์แก้ไขคำร้องของภาควิชาอื่น")
 
@@ -188,7 +188,7 @@ async def delete_opening_request(
     if not existing_req:
         raise HTTPException(status_code=404, detail="ไม่พบใบคำร้องที่ต้องการลบ")
         
-    if current_user.role.lower() not in ["admin", "staff","headMajor"] and \
+    if current_user.role.lower() not in ["admin", "staff","headmajor"] and \
        existing_req.department_id != current_user.department_id:
         raise HTTPException(status_code=403, detail="คุณไม่มีสิทธิ์ลบคำร้องของภาควิชาอื่น")
 
@@ -210,7 +210,7 @@ async def dean_approve_request(
     current_user = Depends(get_current_user)
 ):
 
-    if current_user.role.lower() not in ["dean", "admin","staff","headMajor"]:
+    if current_user.role.lower() not in ["dean", "admin","staff","headmajor"]:
         raise HTTPException(
             status_code=403, 
             detail="คุณไม่มีสิทธิ์ดำเนินการในฐานะคณบดี"

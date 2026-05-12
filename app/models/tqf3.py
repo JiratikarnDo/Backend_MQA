@@ -42,7 +42,11 @@ class TQF3Main(base):
     main_textbooks = Column(Text)
     references = Column(Text)
 
+    department_id = Column(Integer)
+    status = Column(String(50), default="draft")
+    creator_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     instructors = relationship("TQF3Instructor", back_populates="tqf3", cascade="all, delete-orphan")
     clos = relationship("TQF3CLO", back_populates="tqf3", cascade="all, delete-orphan")
