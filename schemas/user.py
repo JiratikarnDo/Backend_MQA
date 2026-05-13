@@ -17,6 +17,7 @@ class UserResponse(BaseModel):
     id: int
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    department_id: Optional[int] = None
     role: str
 
     model_config = {"from_attributes": True}

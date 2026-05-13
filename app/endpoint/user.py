@@ -10,16 +10,19 @@ router = APIRouter(prefix="/users", tags=["User Management"])
 
 @router.get("/", response_model=List[UserResponse])
 async def get_all_users(db: Session = Depends(getDb) , current_user=Depends(get_current_user)):
-    if current_user.role not in ["admin", "staff"]:
+    if current_user.role not in ["admin", "staff","headmajor"]:
         raise HTTPException(
             status_code=403,
             detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
         )
     
     try:
-        users = db.query(Users).filter(
-            Users.role.notin_(["admin", "staff"])
-        ).all()
+        query = db.query(Users).filter(
+            Users.role.notin_(["admin", "staff"]),
+            Users.id != current_user.id
+        )
+
+        users = query.all()
         
         return users
         
