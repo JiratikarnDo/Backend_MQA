@@ -95,7 +95,9 @@ async def get_all_curriculums(
     query = db.query(Curriculum)
 
     if current_user.role == "headmajor":
-        query = query.filter(Curriculum.department_id == current_user.department_id)
+            query = query.join(CurriculumDepartment).filter(
+                CurriculumDepartment.department_id == current_user.department_id
+            )
         
     curriculums = query.all()
     return curriculums
@@ -123,11 +125,14 @@ async def get_curriculum(
         raise HTTPException(status_code=404, detail="ไม่พบหลักสูตรนี้ในระบบ")
     
     if current_user.role == "headmajor":
-        if curriculum.department_id != current_user.department_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, 
-                detail="คุณไม่มีสิทธิ์เข้าถึงข้อมูลหลักสูตรของสาขาอื่น"
-            )
+            user_dept_id = current_user.department_id
+            allowed_depts = [sd.department_id for sd in curriculum.shared_departments]
+            
+            if user_dept_id not in allowed_depts:
+                raise HTTPException(
+                    status_code=403, 
+                    detail="คุณไม่มีสิทธิ์ดูหลักสูตรที่ไม่ได้สังกัดสาขาของคุณ"
+                )
     
     return curriculum
 

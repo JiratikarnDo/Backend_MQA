@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class CourseAssignmentRequest(BaseModel):
-    teacher_ids: List[int] = Field(..., min_length=1)
+    teacher_ids: List[int] = Field(default_factory=list)
 
 
 class AssignedTeacherResponse(BaseModel):
