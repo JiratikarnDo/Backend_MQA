@@ -345,7 +345,7 @@ async def get_courses(
 
     userRole = str(current_user.role or "").lower()
 
-    if userRole in ["admin", "staff"]:
+    if userRole in ["admin", "staff", "headmajor"]:
         if departmentId:
             query = query.filter(Courses.department_id == departmentId)
     else:
@@ -370,7 +370,7 @@ async def get_course_by_id(
     db: Session = Depends(getDb),
     current_user: Users = Depends(get_current_user),
 ):
-    if current_user.role not in ["admin", "staff"]:
+    if current_user.role not in ["admin", "staff","headmajor"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
@@ -392,7 +392,7 @@ async def get_course_by_id(
     return course
 
 
-@router.post("/", response_model=CourseResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_course(
     data: CourseCreate,
     db: Session = Depends(getDb),
@@ -408,15 +408,27 @@ async def create_course(
             detail=f"รหัสวิชา {data.course_code} มีอยู่ในระบบแล้ว ไม่สามารถสร้างซ้ำได้",
         )
 
-    new_course = Courses(**data.dict())
+    new_course = Courses(**data.model_dump())
     db.add(new_course)
+
     try:
         db.commit()
         db.refresh(new_course)
-        return new_course
+
+        return {
+            "status": "success",
+            "message": "เพิ่มรายวิชาสำเร็จเรียบร้อยแล้ว!",
+            "data": {
+                "id": new_course.id,
+                "course_code": new_course.course_code,
+                "course_name_th": new_course.course_name_th,
+            },
+        }
+
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail="เกิดข้อผิดพลาดในการบันทึกข้อมูล")
+        print(f"Error logic: {str(e)}")
+        raise HTTPException(status_code=500, detail="เกิดข้อผิดพลาดทางเทคนิคในการบันทึกข้อมูล")
 
 
 @router.put("/{course_id}", response_model=CourseUpdate)
@@ -426,7 +438,7 @@ async def update_course(
     db: Session = Depends(getDb),
     current_user: Users = Depends(get_current_user),
 ):
-    if current_user.role not in ["admin", "staff"]:
+    if current_user.role not in ["admin", "staff", "headmajor"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",

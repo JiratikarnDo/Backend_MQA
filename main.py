@@ -12,6 +12,9 @@ from app.endpoint.subject_category import router as subject_category_router
 from app.endpoint.department import router as department_router
 from app.endpoint.curriculum import router as curriculum_router
 from app.endpoint.tqf_deadlines import router as tqf_deadlines_router
+from app.endpoint.course_opening import router as course_opening_router
+from app.endpoint.tqf3 import router as tqf_router
+from app.endpoint.user import router as users_router
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import app.models
@@ -32,7 +35,10 @@ app.add_middleware(
 )
 
 base.metadata.create_all(bind=engine)
+
+
 app.include_router(masterdata_router)
+app.include_router(users_router)
 app.include_router(auth_router)
 app.include_router(course_router)
 app.include_router(subject_category_router)
@@ -40,6 +46,8 @@ app.include_router(department_router)
 app.include_router(curriculum_router)
 app.include_router(plo_router)
 app.include_router(tqf_deadlines_router)
+app.include_router(course_opening_router)
+app.include_router(tqf_router)
 
 
 @app.get("/")

@@ -86,13 +86,18 @@ async def get_all_curriculums(
     current_user: Users = Depends(get_current_user)
 ):
     
-    if current_user.role not in ["admin", "staff"]:
+    if current_user.role not in ["admin", "staff", "headmajor"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
         )
 
-    curriculums = db.query(Curriculum).all()
+    query = db.query(Curriculum)
+
+    if current_user.role == "headmajor":
+        query = query.filter(Curriculum.department_id == current_user.department_id)
+        
+    curriculums = query.all()
     return curriculums
 
 
@@ -102,7 +107,7 @@ async def get_curriculum(
     db: Session = Depends(getDb),
     current_user: Users = Depends(get_current_user)
 ):
-    if current_user.role not in ["admin", "staff"]:
+    if current_user.role not in ["admin", "staff", "headmajor"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
@@ -117,6 +122,13 @@ async def get_curriculum(
     if not curriculum:
         raise HTTPException(status_code=404, detail="ไม่พบหลักสูตรนี้ในระบบ")
     
+    if current_user.role == "headmajor":
+        if curriculum.department_id != current_user.department_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail="คุณไม่มีสิทธิ์เข้าถึงข้อมูลหลักสูตรของสาขาอื่น"
+            )
+    
     return curriculum
 
 
@@ -127,7 +139,7 @@ async def update_curriculum(
     db: Session = Depends(getDb),
     current_user: Users = Depends(get_current_user)
 ):
-    if current_user.role not in ["admin", "staff"]:
+    if current_user.role not in ["admin", "staff","headmajor"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
@@ -172,7 +184,7 @@ async def activate_curriculum(
     db: Session = Depends(getDb),
     current_user: Users = Depends(get_current_user)
 ):
-    if current_user.role not in ["admin", "staff"]:
+    if current_user.role not in ["admin", "staff","headmajor"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
@@ -213,7 +225,7 @@ async def delete_curriculum(
     db: Session = Depends(getDb),
     current_user: Users = Depends(get_current_user)
 ):
-    if current_user.role not in ["admin", "staff"]:
+    if current_user.role not in ["admin", "staff","headmajor"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",

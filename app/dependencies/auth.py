@@ -51,7 +51,7 @@ async def get_current_user(
     return user
 
 def check_admin_staff_role(current_user = Depends(get_current_user)): 
-    if current_user.role not in ["admin", "staff"]:
+    if current_user.role not in ["admin", "staff","headMajor"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
