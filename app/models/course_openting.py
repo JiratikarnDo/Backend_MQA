@@ -55,6 +55,7 @@ class RequestedCourseItem(base):
     credits_snapshot = Column(String(50))
 
     request = relationship("CourseOpeningRequest", back_populates="requested_courses")
+    teacher_assignments = relationship("CourseTeacherAssignment", back_populates="requested_course_item", cascade="all, delete-orphan")
 
 class CurriculumResponsiblePerson(base):
     __tablename__ = "curriculum_responsible_persons"
