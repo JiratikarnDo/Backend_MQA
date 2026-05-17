@@ -6,7 +6,7 @@ from app.Interface.sql_db import getDb
 from app.dependencies.auth import get_current_user
 from app.models.course_openting import CourseOpeningRequest, RequestedCourseItem, CurriculumResponsiblePerson
 from app.models.courses import Courses
-from schemas.course_opening import CourseOpeningCreate, CourseOpeningDetailResponse, CourseOpeningSummaryResponse, DeanActionRequest
+from schemas.course_opening import CourseOpeningCreate, CourseOpeningCreateDarft, CourseOpeningDetailResponse, CourseOpeningSummaryResponse, DeanActionRequest
 
 router = APIRouter(prefix="/course-opening", tags=["Course Opening"])
 
@@ -75,7 +75,7 @@ async def submit_opening_request(
 
 @router.post("/dratf", status_code=status.HTTP_201_CREATED)
 async def submit_opening_request(
-    data: CourseOpeningCreate, 
+    data: CourseOpeningCreateDarft, 
     db: Session = Depends(getDb),
     current_user = Depends(get_current_user)
 ):

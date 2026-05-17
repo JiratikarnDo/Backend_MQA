@@ -83,6 +83,67 @@ class CourseOpeningCreate(BaseModel):
     )
 
 
+class CourseOpeningCreateDarft(BaseModel):
+    submission_times: Optional[int]
+    semester: Optional[str]
+    academic_year: Optional[int]
+    curriculum_name: Optional[str]
+    major_name: Optional[str]
+    program_type: Optional[str]
+    study_mode: Optional[str]
+    campus: Optional[str]
+    target_group: Optional[str]
+
+    requested_courses: List[RequestedCourseItemBase]
+    responsible_persons: List[ResponsiblePersonBase]
+
+    head_of_department: AdminSignatory
+    vice_dean: AdminSignatory
+    dean: AdminSignatory
+    is_confirmed: bool
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "submission_times": 1,
+                "semester": "ภาค 1",
+                "academic_year": 2568,
+                "curriculum_name": "หลักสูตรวิทยาศาสตรบัณฑิต",
+                "major_name": "วิทยาการคอมพิวเตอร์",
+                "program_type": "4 ปี",
+                "study_mode": "ภาคปกติ",
+                "campus": "บางพระ",
+                "target_group": "BP",
+                "requested_courses": [
+                    {
+                        "year_level": 1,
+                        "course_id": 1,
+                        "is_science_related": True,
+                        "is_humanities_related":True,
+                        "is_elective": False,
+                        "note": "ขอเปิดเป็นกรณีพิเศษ"
+                    }
+                ],
+                "responsible_persons": [
+                    {"name": "อาจารย์ ก", "signed_date": "2026-05-06"}
+                ],
+                "head_of_department": {
+                    "name": "อาจารย์ ปวีรา เครือโสม",
+                    "signed_date": "2026-05-06",
+                },
+                "vice_dean": {
+                    "name": "ผศ. อภิรัตน์ ใจผ่อง",
+                    "signed_date": "2026-05-06",
+                },
+                "dean": {"name": "นาย สมเกตุ วรเทพนิตย์", "signed_date": "2026-05-06"},
+                "is_confirmed": True,
+            }
+        },
+    )
+
+
+
 class CourseOpeningResponse(BaseModel):
     id: int
     status: str
