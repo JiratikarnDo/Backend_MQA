@@ -71,6 +71,70 @@ async def submit_opening_request(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
+
+
+@router.post("/dratf", status_code=status.HTTP_201_CREATED)
+async def submit_opening_request(
+    data: CourseOpeningCreate, 
+    db: Session = Depends(getDb),
+    current_user = Depends(get_current_user)
+):
+    req_course_ids = list(set(c.course_id for c in data.requested_courses))
+    found_courses = db.query(Courses).filter(Courses.id.in_(req_course_ids)).all()
+
+    if len(found_courses) != len(req_course_ids):
+        found_ids = [c.id for c in found_courses]
+        missing = list(set(req_course_ids) - set(found_ids))
+        raise HTTPException(status_code=400, detail=f"ไม่พบ ID รายวิชา: {missing}")
+
+    course_master_map = {c.id: c for c in found_courses}
+
+    try:
+        new_req = CourseOpeningRequest(
+            submission_times=data.submission_times, semester=data.semester,
+            academic_year=data.academic_year, curriculum_name=data.curriculum_name,
+            major_name=data.major_name, program_type=data.program_type,
+            study_mode=data.study_mode, campus=data.campus, target_group=data.target_group,
+            user_id=current_user.id, department_id=current_user.department_id,
+            head_dept_name=data.head_of_department.name, head_dept_signed=data.head_of_department.signed_date,
+            vice_dean_name=data.vice_dean.name, vice_dean_signed=data.vice_dean.signed_date,
+            dean_name=data.dean.name, dean_signed=data.dean.signed_date,
+            is_confirmed=data.is_confirmed,
+            status="draft"
+        )
+        db.add(new_req)
+        db.flush()
+
+        for item in data.requested_courses:
+            master = course_master_map.get(item.course_id)
+            db.add(RequestedCourseItem(
+                request_id=new_req.id,
+                course_id=master.id,
+                course_code_snapshot=master.course_code,
+                course_name_snapshot=master.course_name_th,
+                credits_snapshot=master.credit_total,
+                year_level=item.year_level,
+                group_no=item.group_no,
+                student_count=item.student_count,
+                is_elective=item.is_elective,
+                is_science_related=item.is_science_related,
+                is_humanities_related=item.is_humanities_related,
+                note=item.note
+            ))
+
+        for person in data.responsible_persons:
+            db.add(CurriculumResponsiblePerson(
+                request_id=new_req.id,
+                name=person.name,
+                signed_date=person.signed_date
+            ))
+
+        db.commit()
+        return {"status": "success", "id": new_req.id}
+
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
     
 @router.get("/", response_model=list[CourseOpeningSummaryResponse])
 async def get_all_opening_requests(
