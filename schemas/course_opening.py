@@ -83,7 +83,7 @@ class CourseOpeningCreate(BaseModel):
     )
 
 
-class CourseOpeningCreateDarft(BaseModel):
+class CourseOpeningCreateDraft(BaseModel):
     submission_times: Optional[int]
     semester: Optional[str]
     academic_year: Optional[int]

@@ -73,7 +73,7 @@ async def submit_opening_request(
         raise HTTPException(status_code=500, detail=f"Database Error: {str(e)}")
 
 
-@router.post("/dratf", status_code=status.HTTP_201_CREATED)
+@router.post("/Draft", status_code=status.HTTP_201_CREATED)
 async def submit_opening_request(
     data: CourseOpeningCreateDarft, 
     db: Session = Depends(getDb),
