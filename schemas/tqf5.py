@@ -14,7 +14,8 @@ TQF5_EXAMPLE = {
         "creditsDetail": "3(2-2-5)"
     },
     "section3": {
-        "curriculum": ["บริหารธุรกิจบัณฑิต สาขาวิชาระบบสารสนเทศ"]
+        "curriculum": ["บริหารธุรกิจบัณฑิต สาขาวิชาระบบสารสนเทศ"],
+        "courseCategory": "วิชาเฉพาะด้าน"
     },
     "section4": {
         "teachers": ["อ.สมชาย สายคอม", "อ.สมหญิง รักเรียน"]
@@ -154,6 +155,7 @@ class Section2Base(BaseModel):
 
 class Section3Base(BaseModel):
     curriculum: List[str]
+    courseCategory: Optional[str] = None
 
 class Section4Base(BaseModel):
     teachers: List[str]
@@ -357,6 +359,7 @@ class TQF5Response(BaseModel):
     credits: Optional[int] = None
     creditsDetail: Optional[str] = None
     curriculum: Optional[Any] = None
+    courseCategory: Optional[str] = None
     teachers: Optional[Any] = None
     semester: Optional[int] = None
     year: Optional[int] = None

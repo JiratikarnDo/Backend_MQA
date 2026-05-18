@@ -8,6 +8,7 @@ from schemas.tqf5 import TQF5Create, TQF5Response, TQF5_EXAMPLE
 from app.models.course_assignment import CourseTeacherAssignment
 from app.models.course_openting import CourseOpeningRequest, RequestedCourseItem
 from app.models.courses import Courses
+from app.models.tqf3 import TQF3Main
 from app.models.tqf5 import TQF5Main, TQF5Teacher, TQF5CLOResult, TQF5Grade, TQF5Tolerance, TQF5Issue, TQF5Feedback, TQF5PastPlan, TQF5NextPlan, TQF5ListItem, TQF5Signer
 
 router = APIRouter(prefix="/tqf5", tags=["TQF5"])
@@ -67,6 +68,39 @@ def check_tqf5_writer_permission(course_id: int, db: Session, current_user):
             )
 
 
+def build_teacher_name(teacher):
+    return " ".join(
+        part for part in [teacher.prefixname, teacher.first_name, teacher.last_name] if part
+    )
+
+
+def build_credit_detail(course: Courses):
+    if course.credit_total is None:
+        return None
+
+    return f"{course.credit_total}({course.credit_lecture or 0}-{course.credit_lab or 0}-{course.credit_self_study or 0})"
+
+
+def get_course_clo_rows(course_id: int, db: Session):
+    tqf3_data = db.query(TQF3Main).options(
+        joinedload(TQF3Main.clos)
+    ).filter(TQF3Main.course_id == course_id).order_by(TQF3Main.id.desc()).first()
+
+    if not tqf3_data:
+        return []
+
+    return [
+        {
+            "clo": f"CLO{clo.number}" if clo.number else None,
+            "teach": "",
+            "assess": "",
+            "outcome": clo.detail,
+            "improve": "",
+        }
+        for clo in sorted(tqf3_data.clos, key=lambda item: item.number or 0)
+    ]
+
+
 def update_tqf5_snapshot(tqf5: TQF5Main, document_data: Dict[str, Any]):
     section1 = get_section(document_data, "section1")
     section2 = get_section(document_data, "section2")
@@ -86,6 +120,7 @@ def update_tqf5_snapshot(tqf5: TQF5Main, document_data: Dict[str, Any]):
     tqf5.credits = parse_int(section2.get("credits"))
     tqf5.creditsDetail = section2.get("creditsDetail")
     tqf5.curriculum = section3.get("curriculum")
+    tqf5.courseCategory = section3.get("courseCategory")
     tqf5.teachers = section4.get("teachers")
     tqf5.semester = parse_int(section5.get("semester"))
     tqf5.year = parse_int(section5.get("year"))
@@ -247,6 +282,114 @@ def delete_tqf5_details(tqf5_id: int, db: Session):
     db.query(TQF5NextPlan).filter(TQF5NextPlan.tqf5_id == tqf5_id).delete()
     db.query(TQF5ListItem).filter(TQF5ListItem.tqf5_id == tqf5_id).delete()
     db.query(TQF5Signer).filter(TQF5Signer.tqf5_id == tqf5_id).delete()
+
+
+@router.get("/autofill/{requested_course_item_id}")
+async def get_tqf5_autofill(
+    requested_course_item_id: int,
+    db: Session = Depends(getDb),
+    current_user = Depends(get_current_user)
+):
+    item = db.query(RequestedCourseItem).options(
+        joinedload(RequestedCourseItem.request),
+        joinedload(RequestedCourseItem.teacher_assignments).joinedload(CourseTeacherAssignment.teacher)
+    ).filter(RequestedCourseItem.id == requested_course_item_id).first()
+
+    if not item:
+        raise HTTPException(status_code=404, detail="ไม่พบรายการรายวิชาที่ระบุ")
+
+    if item.request.status != "approved":
+        raise HTTPException(status_code=400, detail="ต้องเป็นรายวิชาที่ผ่านการอนุมัติเปิดสอนแล้วเท่านั้น")
+
+    course_master = db.query(Courses).options(
+        joinedload(Courses.category),
+        joinedload(Courses.sub_group)
+    ).filter(Courses.id == item.course_id).first()
+
+    if not course_master:
+        raise HTTPException(
+            status_code=404,
+            detail=f"ไม่พบรายวิชารหัส ID: {item.course_id} ในระบบ กรุณาตรวจสอบอีกครั้ง"
+        )
+
+    user_role = current_user.role.lower()
+
+    if user_role not in ["admin", "staff"]:
+        if item.request.department_id != current_user.department_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="คุณไม่มีสิทธิ์ดูข้อมูลรายวิชานอกสาขาของคุณ",
+            )
+
+        assigned_teacher_ids = [
+            assignment.teacher_id for assignment in item.teacher_assignments
+        ]
+        if user_role in ["teacher", "headmajor"] and current_user.id not in assigned_teacher_ids:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="คุณไม่มีสิทธิ์ดูข้อมูลรายวิชาที่ไม่ได้รับมอบหมาย",
+            )
+
+    sorted_assignments = sorted(item.teacher_assignments, key=lambda assignment: assignment.order_index)
+    teacher_names = [
+        build_teacher_name(assignment.teacher)
+        for assignment in sorted_assignments
+        if assignment.teacher
+    ]
+    primary_assignment = next(
+        (assignment for assignment in sorted_assignments if assignment.is_primary),
+        None
+    )
+    primary_teacher_name = (
+        build_teacher_name(primary_assignment.teacher)
+        if primary_assignment and primary_assignment.teacher
+        else None
+    )
+
+    course_category = course_master.category.name if course_master.category else None
+
+    return {
+        "status": "success",
+        "requested_course_item_id": item.id,
+        "course_id": course_master.id,
+        "primary_teacher": primary_teacher_name,
+        "co_teachers": [
+            build_teacher_name(assignment.teacher)
+            for assignment in sorted_assignments
+            if assignment.teacher and not assignment.is_primary
+        ],
+        "section1": {
+            "courseCode": course_master.course_code,
+            "nameThai": course_master.course_name_th,
+            "nameEng": course_master.course_name_en,
+        },
+        "section2": {
+            "credits": course_master.credit_total,
+            "creditsDetail": item.credits_snapshot or build_credit_detail(course_master),
+        },
+        "section3": {
+            "curriculum": [item.request.curriculum_name],
+            "courseCategory": course_category,
+        },
+        "section4": {
+            "teachers": teacher_names,
+            "primaryTeacher": primary_teacher_name,
+        },
+        "section5": {
+            "semester": item.request.semester,
+            "year": item.request.academic_year,
+            "yearLevel": item.year_level,
+            "group": item.group_no,
+            "studentCount": item.student_count,
+        },
+        "section7": {
+            "pre": course_master.prerequisite,
+            "co": course_master.corequisite,
+        },
+        "section11": {
+            "rows": get_course_clo_rows(course_master.id, db),
+        },
+    }
 
 
 @router.post(

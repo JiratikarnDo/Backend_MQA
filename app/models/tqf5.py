@@ -15,6 +15,7 @@ class TQF5Main(base):
     credits = Column(Integer)
     creditsDetail = Column(String(100))
     curriculum = Column(JSON)
+    courseCategory = Column(String(255))
     teachers = Column(JSON)
     semester = Column(Integer)
     year = Column(Integer)
