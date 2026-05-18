@@ -24,10 +24,23 @@ async def create_curriculum(
             detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
         )
 
+
     if curriculum_in.curriculum_code:
         existing = db.query(Curriculum).filter(Curriculum.curriculum_code == curriculum_in.curriculum_code).first()
         if existing:
             raise HTTPException(status_code=400, detail="รหัสหลักสูตรนี้มีอยู่ในระบบแล้ว")
+
+    if curriculum_in.department_ids:
+        existing_depts = db.query(Departments).filter(Departments.id.in_(curriculum_in.department_ids)).all()
+        existing_ids = [d.id for d in existing_depts]
+
+        missing_ids = list(set(curriculum_in.department_ids) - set(existing_ids))
+        
+        if missing_ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"ไม่พบสาขา ID: {missing_ids} ในระบบ โปรดตรวจสอบความถูกต้อง"
+            )
 
     try:
         main_data = curriculum_in.model_dump(exclude={"department_ids"})
