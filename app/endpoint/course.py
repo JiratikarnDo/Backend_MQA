@@ -95,7 +95,6 @@ async def create_course(
         
     except Exception as e:
         db.rollback()
-        # พ่น error จริงออก terminal ไว้ debug
         print(f"Error logic: {str(e)}") 
         raise HTTPException(status_code=500, detail="เกิดข้อผิดพลาดทางเทคนิคในการบันทึกข้อมูล")
 
