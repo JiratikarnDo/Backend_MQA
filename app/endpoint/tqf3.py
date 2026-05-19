@@ -320,3 +320,64 @@ async def delete_tqf3(
         db.rollback()
         raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาดในการลบ: {str(e)}")
     
+@router.get("/auto-fill/{course_id}")
+async def get_tqf3_autofill(
+    course_id: int, 
+    db: Session = Depends(getDb),
+    current_user: Users = Depends(get_current_user)
+):
+    
+    existing_tqf3 = db.query(TQF3Main).options(
+        joinedload(TQF3Main.instructors),
+        joinedload(TQF3Main.clos),
+        joinedload(TQF3Main.lesson_plans),
+        joinedload(TQF3Main.evaluation_plans),
+        joinedload(TQF3Main.development_plans)
+    ).filter(
+        TQF3Main.course_id == course_id,
+        TQF3Main.creator_id == current_user.id # ดูเฉพาะของตัวเองที่เคยสร้าง
+    ).first()
+
+    if existing_tqf3:
+        return {
+            "is_draft_exist": True,
+            "message": "พบข้อมูลที่ทำไว้ ดึงข้อมูลสำเร็จ",
+            "data": existing_tqf3
+        }
+    
+    course_master = db.query(Courses).filter(Courses.id == course_id).first()
+    if not course_master:
+        raise HTTPException(status_code=404, detail="ไม่พบรายวิชานี้ในระบบ")
+
+    auto_fill_data = {
+        "course_id": course_master.id,
+        "course_code": course_master.course_code,
+        "course_name_th": course_master.course_name_th,
+        "course_name_en": course_master.course_name_en,
+        "credit": course_master.credit,
+        "lecture_hours": course_master.lecture_hours,
+        "practice_hours": course_master.practice_hours,
+        "self_study_hours": course_master.self_study_hours,
+        "course_description": course_master.course_description,
+        
+        "instructors": [
+            {
+                "user_id": current_user.id,
+                "name": current_user.name, # เปลี่ยนเป็นฟิลด์ชื่อตามตาราง User ของโด้
+                "role_in_course": "ผู้รับผิดชอบรายวิชา"
+            }
+        ],
+        
+        # ส่วนที่ยังไม่มี (ตารางลูกอื่นๆ) ให้ส่งลิสต์ว่างไป หน้าบ้านจะได้ไม่พัง (map ไม่ error)
+        "clos": [],
+        "lesson_plans": [],
+        "evaluation_plans": [],
+        "development_plans": []
+    }
+
+    return {
+        "is_draft_exist": False,
+        "message": "สร้างฟอร์มตั้งต้นเรียบร้อยแล้ว",
+        "data": auto_fill_data
+    }
+    
