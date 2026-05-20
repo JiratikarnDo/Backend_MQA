@@ -15,6 +15,7 @@ from app.endpoint.tqf_deadlines import router as tqf_deadlines_router
 from app.endpoint.course_opening import router as course_opening_router
 from app.endpoint.course_assignment import router as course_assignment_router
 from app.endpoint.tqf3 import router as tqf_router
+from app.endpoint.tqf5 import router as tqf5_router
 from app.endpoint.user import router as users_router
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -50,6 +51,7 @@ app.include_router(tqf_deadlines_router)
 app.include_router(course_opening_router)
 app.include_router(course_assignment_router)
 app.include_router(tqf_router)
+app.include_router(tqf5_router)
 
 
 @app.get("/")
