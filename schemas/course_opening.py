@@ -155,7 +155,6 @@ class CourseOpeningDetailResponse(CourseOpeningSummaryResponse):
     campus: str
     target_group: str
     
-    # ผู้ลงนาม
     head_dept_name: Optional[str]
     head_dept_signed: Optional[date]
     vice_dean_name: Optional[str]
