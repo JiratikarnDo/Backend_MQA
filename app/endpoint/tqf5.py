@@ -466,11 +466,21 @@ async def get_all_tqf5(
         return {"status": "success", "data": []}
 
     tqf5_list = query.all()
+    tqf5_items = []
+
+    for tqf5 in tqf5_list:
+        tqf5_items.append({
+            "courseCode": tqf5.courseCode,
+            "nameThai": tqf5.nameThai,
+            "department_id": tqf5.department_id,
+            "submittedAt": tqf5.updated_at if tqf5.status != "draft" else None,
+            "status": tqf5.status,
+        })
     
     return {
         "status": "success",
         "total": len(tqf5_list),
-        "data": tqf5_list
+        "data": tqf5_items
     }
     
 @router.get("/{tqf5_id}", response_model=TQF5Response)
