@@ -143,16 +143,6 @@ class CourseOpeningDetailResponse(CourseOpeningSummaryResponse):
     study_mode: str
     campus: str
     target_group: str
-<<<<<<< HEAD
-    
-    head_dept_name: Optional[str]
-    head_dept_signed: Optional[date]
-    vice_dean_name: Optional[str]
-    vice_dean_signed: Optional[date]
-    dean_name: Optional[str]
-    dean_signed: Optional[date]
-=======
->>>>>>> 9f82b4de0139a51bee4a45457ab04c3a15c94434
 
     head_dept_name: Optional[str] = None
     head_dept_signed: Optional[date] = None
