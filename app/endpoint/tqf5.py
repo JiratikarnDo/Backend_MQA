@@ -482,7 +482,7 @@ async def get_all_tqf5(
 ):
     query = db.query(TQF5Main)
     
-    if current_user.role.lower() in ["staff", "head"]:
+    if current_user.role.lower() in ["staff", "headmajor"]:
         query = query.filter(TQF5Main.department_id == current_user.department_id)
         
     elif current_user.role.lower() in ["admin", "dean"]:
@@ -499,8 +499,15 @@ async def get_all_tqf5(
 
     for tqf5 in tqf5_list:
         tqf5_items.append({
+            "id": tqf5.id,
+            "tqf5Id": tqf5.id,
+            "mqa5Id": tqf5.id,
+            "documentId": tqf5.id,
+            "course_id": tqf5.course_id,
+            "courseId": tqf5.course_id,
             "courseCode": tqf5.courseCode,
             "nameThai": tqf5.nameThai,
+            "nameEng": tqf5.nameEng,
             "department_id": tqf5.department_id,
             "submittedAt": tqf5.updated_at if tqf5.status != "draft" else None,
             "status": tqf5.status,

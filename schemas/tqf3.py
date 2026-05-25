@@ -157,7 +157,7 @@ class TQF3Response(BaseModel):
     location: Optional[str] = None
     pre_requisite: Optional[str] = None
     co_requisite: Optional[str] = None
-    updated_at: Optional[date] = None
+    updated_at: Optional[datetime] = None
     course_description: Optional[str] = None
     objectives: Optional[str] = None
     plo_mapping: Optional[str] = None
