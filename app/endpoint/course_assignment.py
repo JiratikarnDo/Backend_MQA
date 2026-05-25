@@ -103,7 +103,7 @@ async def get_assignable_teachers(
         )
 
     query = db.query(Users).options(joinedload(Users.department)).filter(
-        Users.role.in_(["teacher", "headMajor", "headmajor"])
+        Users.role.in_(["teacher", "headmajor", "headmajor"])
     )
 
     if current_user.role.lower() not in ["admin", "staff"]:

@@ -134,6 +134,7 @@ class CourseOpeningSummaryResponse(BaseModel):
     major_name: str
     status: str
     created_at: datetime
+    note: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

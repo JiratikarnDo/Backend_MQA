@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date as DateType, datetime
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict
 
@@ -145,37 +145,37 @@ TQF5_EXAMPLE = {
 }
 
 class Section1Base(BaseModel):
-    courseCode: str
-    nameThai: str
-    nameEng: str
+    courseCode: Optional[str] = None
+    nameThai: Optional[str] = None
+    nameEng: Optional[str] = None
 
 class Section2Base(BaseModel):
-    credits: int
-    creditsDetail: str
+    credits: Optional[int] = None
+    creditsDetail: Optional[str] = None
 
 class Section3Base(BaseModel):
-    curriculum: List[str]
+    curriculum: Optional[List[str]] = []
     courseCategory: Optional[str] = None
 
 class Section4Base(BaseModel):
-    teachers: List[str]
+    teachers: Optional[List[str]] = []
 
 class Section5Base(BaseModel):
-    semester: int
-    year: int
-    yearLevel: int
-    group: int
-    studentCount: int
+    semester: Optional[int] = None
+    year: Optional[int] = None
+    yearLevel: Optional[int] = None
+    group: Optional[int] = None
+    studentCount: Optional[int] = None
 
 class Section6Base(BaseModel):
-    location: str
+    location: Optional[str] = None
 
 class Section7Base(BaseModel):
     pre: Optional[str] = None
     co: Optional[str] = None
 
 class Section8Base(BaseModel):
-    updatedDate: date
+    updatedDate: Optional[DateType] = None
 
 class Section9Base(BaseModel):
     deviatedHours: Optional[str] = None
@@ -184,98 +184,97 @@ class Section10Base(BaseModel):
     uncoveredTopics: Optional[str] = None
 
 class Section11RowBase(BaseModel):
-    clo: str
-    teach: str
-    assess: str
-    outcome: str
-    improve: str
+    clo: Optional[str] = None
+    teach: Optional[str] = None
+    assess: Optional[str] = None
+    outcome: Optional[str] = None
+    improve: Optional[str] = None
 
 class Section11Base(BaseModel):
-    rows: List[Section11RowBase]
+    rows: Optional[List[Section11RowBase]] = []
 
 class GradeRowBase(BaseModel):
-    grade: str
-    range: str
-    count: int
-    percent: float
+    grade: Optional[str] = None
+    range: Optional[str] = None
+    count: Optional[int] = None
+    percent: Optional[float] = None
 
 class ToleranceBase(BaseModel):
     deviation: Optional[str] = None
     reason: Optional[str] = None
 
 class Section12Base(BaseModel):
-    registered: int
-    remaining: int
-    withdrawn: int
-    grades: List[GradeRowBase]
+    registered: Optional[int] = None
+    remaining: Optional[int] = None
+    withdrawn: Optional[int] = None
+    grades: Optional[List[GradeRowBase]] = []
     abnormalFactor: Optional[str] = None
-    tolerance: Optional[List[ToleranceBase]] = None
+    tolerance: Optional[List[ToleranceBase]] = []
 
 class IssueRowBase(BaseModel):
-    issue: str
-    impact: str
+    issue: Optional[str] = None
+    impact: Optional[str] = None
 
 class Section13Base(BaseModel):
-    resourceIssues: List[IssueRowBase]
-    adminIssues: List[IssueRowBase]
+    resourceIssues: Optional[List[IssueRowBase]] = []
+    adminIssues: Optional[List[IssueRowBase]] = []
 
 class FeedbackRowBase(BaseModel):
-    criticism: str
-    response: str
+    criticism: Optional[str] = None
+    response: Optional[str] = None
 
 class Section14Base(BaseModel):
-    systemFeedback: List[FeedbackRowBase]
-    otherFeedback: List[FeedbackRowBase]
+    systemFeedback: Optional[List[FeedbackRowBase]] = []
+    otherFeedback: Optional[List[FeedbackRowBase]] = []
 
 class PastPlanRowBase(BaseModel):
-    plan: str
-    result: str
+    plan: Optional[str] = None
+    result: Optional[str] = None
 
 class NextPlanRowBase(BaseModel):
-    plan: str
-    deadline: str
-    owner: str
+    plan: Optional[str] = None
+    deadline: Optional[str] = None
+    owner: Optional[str] = None
 
 class Section15Base(BaseModel):
-    pastPlans: List[PastPlanRowBase]
-    otherActions: List[str]
-    recommendations: List[str]
-    nextPlans: List[NextPlanRowBase]
+    pastPlans: Optional[List[PastPlanRowBase]] = []
+    otherActions: Optional[List[str]] = []
+    recommendations: Optional[List[str]] = []
+    nextPlans: Optional[List[NextPlanRowBase]] = []
 
 class TeacherSignRowBase(BaseModel):
-    name: str
-    signature: str
-    date: date
+    name: Optional[str] = None
+    signature: Optional[str] = None
+    date: Optional[DateType] = None
 
 class Section16Base(BaseModel):
-    integrations: List[str]
-    subjectTeachers: List[TeacherSignRowBase]
-    curriculumTeachers: List[TeacherSignRowBase]
+    integrations: Optional[List[str]] = []
+    subjectTeachers: Optional[List[TeacherSignRowBase]] = []
+    curriculumTeachers: Optional[List[TeacherSignRowBase]] = []
 
 class TQF5Create(BaseModel):
     course_id: Optional[int] = None
-    section1: Section1Base
-    section2: Section2Base
-    section3: Section3Base
-    section4: Section4Base
-    section5: Section5Base
-    section6: Section6Base
-    section7: Section7Base
-    section8: Section8Base
-    section9: Section9Base
-    section10: Section10Base
-    section11: Section11Base
-    section12: Section12Base
-    section13: Section13Base
-    section14: Section14Base
-    section15: Section15Base
-    section16: Section16Base
+    section1: Optional[Section1Base] = None
+    section2: Optional[Section2Base] = None
+    section3: Optional[Section3Base] = None
+    section4: Optional[Section4Base] = None
+    section5: Optional[Section5Base] = None
+    section6: Optional[Section6Base] = None
+    section7: Optional[Section7Base] = None
+    section8: Optional[Section8Base] = None
+    section9: Optional[Section9Base] = None
+    section10: Optional[Section10Base] = None
+    section11: Optional[Section11Base] = None
+    section12: Optional[Section12Base] = None
+    section13: Optional[Section13Base] = None
+    section14: Optional[Section14Base] = None
+    section15: Optional[Section15Base] = None
+    section16: Optional[Section16Base] = None
 
     model_config = ConfigDict(
         str_strip_whitespace=True,
         extra='forbid'
     )
-
 
 class TQF5TeacherResponse(BaseModel):
     id: int
@@ -343,7 +342,7 @@ class TQF5SignerResponse(BaseModel):
     signer_type: Optional[str] = None
     name: Optional[str] = None
     signature: Optional[str] = None
-    signed_date: Optional[date] = None
+    signed_date: Optional[DateType] = None
     model_config = {"from_attributes": True}
 
 class TQF5Response(BaseModel):
@@ -369,7 +368,7 @@ class TQF5Response(BaseModel):
     location: Optional[str] = None
     pre: Optional[str] = None
     co: Optional[str] = None
-    updatedDate: Optional[date] = None
+    updatedDate: Optional[DateType] = None
     deviatedHours: Optional[str] = None
     uncoveredTopics: Optional[str] = None
     registered: Optional[int] = None

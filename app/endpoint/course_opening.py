@@ -252,10 +252,22 @@ async def update_opening_request(
             detail="คุณไม่มีสิทธิ์แก้ไขคำร้องนี้",
         )
 
+    if existing_req.status not in ["draft", "rejected"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"ไม่สามารถแก้ไขเอกสารในสถานะ '{existing_req.status}' ได้",
+        )
+
     course_master_map = validateRequestedCourses(data, db)
 
     try:
         applyRequestHeaderData(existing_req, data)
+
+        if existing_req.status in ["rejected"]:
+            existing_req.status = "draft"
+            existing_req.note = None
+            existing_req.dean_name = None
+            existing_req.dean_signed = None
 
         db.query(RequestedCourseItem).filter(
             RequestedCourseItem.request_id == request_id
@@ -301,6 +313,7 @@ async def update_opening_request(
         return {
             "status": "success",
             "message": "แก้ไขข้อมูลสำเร็จ",
+            "new_status": existing_req.status,
         }
 
     except Exception as e:
