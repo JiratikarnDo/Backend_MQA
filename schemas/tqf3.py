@@ -141,6 +141,12 @@ class EvaluationResponse(EvaluationBase):
 class TQF3Response(BaseModel):
     id: int
     course_id: Optional[int] = None
+
+    course_code_snap: Optional[str] = None
+    course_name_th_snap: Optional[str] = None
+    course_name_en_snap: Optional[str] = None
+    credits_snap: Optional[str] = None
+
     curriculum_name: Optional[str] = None
     course_category: Optional[str] = None
     semester: Optional[str] = None
@@ -151,10 +157,7 @@ class TQF3Response(BaseModel):
     location: Optional[str] = None
     pre_requisite: Optional[str] = None
     co_requisite: Optional[str] = None
-    
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-    
+    updated_at: Optional[date] = None
     course_description: Optional[str] = None
     objectives: Optional[str] = None
     plo_mapping: Optional[str] = None
@@ -166,7 +169,7 @@ class TQF3Response(BaseModel):
     integration_detail: Optional[str] = None
     main_textbooks: Optional[str] = None
     references: Optional[str] = None
-    
+
     instructors: Optional[List[InstructorResponse]] = []
     clos: Optional[List[CLOResponse]] = []
     development_plans: Optional[List[DevelopmentResponse]] = []

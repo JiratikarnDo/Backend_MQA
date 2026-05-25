@@ -239,6 +239,12 @@ async def get_tqf3_detail(
     return {
         "id": tqf3_data.id,
         "course_id": tqf3_data.course_id,
+
+        "course_code_snap": getattr(tqf3_data, "course_code_snap", None),
+        "course_name_th_snap": getattr(tqf3_data, "course_name_th_snap", None),
+        "course_name_en_snap": getattr(tqf3_data, "course_name_en_snap", None),
+        "credits_snap": getattr(tqf3_data, "credits_snap", None),
+
         "curriculum_name": tqf3_data.curriculum_name,
         "course_category": tqf3_data.course_category,
         "semester": tqf3_data.semester,
@@ -261,14 +267,17 @@ async def get_tqf3_detail(
         "integration_detail": tqf3_data.integration_detail,
         "main_textbooks": tqf3_data.main_textbooks,
         "references": tqf3_data.references,
+
         "instructors": [
             {
+                "id": item.id,
                 "name": item.name
             }
             for item in instructors
         ],
         "clos": [
             {
+                "id": item.id,
                 "number": item.number,
                 "detail": item.detail
             }
@@ -276,6 +285,7 @@ async def get_tqf3_detail(
         ],
         "development_plans": [
             {
+                "id": item.id,
                 "clo_number": item.clo_number,
                 "teaching_strategy": item.teaching_strategy,
                 "evaluation_strategy": item.evaluation_strategy
@@ -284,6 +294,7 @@ async def get_tqf3_detail(
         ],
         "lesson_plans": [
             {
+                "id": item.id,
                 "week": item.week,
                 "topic": item.topic,
                 "clos": item.clos,
@@ -295,6 +306,7 @@ async def get_tqf3_detail(
         ],
         "evaluation_plans": [
             {
+                "id": item.id,
                 "activity": item.activity,
                 "clo_number": item.clo_number,
                 "evaluation_week": item.evaluation_week,
