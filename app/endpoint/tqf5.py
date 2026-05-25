@@ -64,7 +64,7 @@ def check_tqf5_writer_permission(course_id: int, db: Session, current_user):
         if not is_primary_assigned_teacher(course_id, current_user.id, db):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="à¹€à¸‰à¸žà¸²à¸°à¸­à¸²à¸ˆà¸²à¸£à¸¢à¹Œà¸«à¸¥à¸±à¸à¸—à¸µà¹ˆà¹„à¸”à¹‰à¸£à¸±à¸šà¸¡à¸­à¸šà¸«à¸¡à¸²à¸¢à¸£à¸²à¸¢à¸§à¸´à¸Šà¸²à¸™à¸µà¹‰à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™à¸—à¸µà¹ˆà¹€à¸‚à¸µà¸¢à¸™ à¸¡à¸„à¸­.5 à¹„à¸”à¹‰",
+                detail="เฉพาะอาจารย์หลักที่ได้รับมอบหมายรายวิชานี้เท่านั้นที่เขียน มคอ.5 ได้",
             )
 
 
@@ -298,7 +298,7 @@ async def get_tqf5_autofill(
     if not course_master:
         raise HTTPException(
             status_code=404,
-            detail=f"à¹„à¸¡à¹ˆà¸žà¸šà¸£à¸²à¸¢à¸§à¸´à¸Šà¸²à¸£à¸«à¸±à¸ª ID: {course_id} à¹ƒà¸™à¸£à¸°à¸šà¸š à¸à¸£à¸¸à¸“à¸²à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¸­à¸µà¸à¸„à¸£à¸±à¹‰à¸‡"
+            detail=f"ไม่พบรายวิชารหัส ID: {course_id} ในระบบ กรุณาตรวจสอบอีกครั้ง"
         )
 
     existing_tqf5 = db.query(TQF5Main).options(
@@ -320,7 +320,7 @@ async def get_tqf5_autofill(
     if existing_tqf5:
         return {
             "is_draft_exist": True,
-            "message": "à¸žà¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸—à¸µà¹ˆà¸—à¸³à¹„à¸§à¹‰ à¸”à¸¶à¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ªà¸³à¹€à¸£à¹‡à¸ˆ",
+            "message": "พบข้อมูลที่ทำไว้ ดึงข้อมูลสำเร็จ",
             "data": existing_tqf5
         }
 
@@ -351,7 +351,7 @@ async def get_tqf5_autofill(
     if not item:
         raise HTTPException(
             status_code=404,
-            detail="à¹„à¸¡à¹ˆà¸žà¸šà¸£à¸²à¸¢à¸à¸²à¸£à¹€à¸›à¸´à¸”à¸£à¸²à¸¢à¸§à¸´à¸Šà¸²à¸—à¸µà¹ˆà¸œà¹ˆà¸²à¸™à¸à¸²à¸£à¸­à¸™à¸¸à¸¡à¸±à¸•à¸´à¸«à¸£à¸·à¸­à¸„à¸¸à¸“à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸£à¸±à¸šà¸¡à¸­à¸šà¸«à¸¡à¸²à¸¢à¸£à¸²à¸¢à¸§à¸´à¸Šà¸²à¸™à¸µà¹‰"
+            detail="ไม่พบรายการเปิดรายวิชาที่ผ่านการอนุมัติหรือคุณยังไม่ได้รับมอบหมายรายวิชานี้"
         )
 
     sorted_assignments = sorted(item.teacher_assignments, key=lambda assignment: assignment.order_index)
@@ -417,7 +417,7 @@ async def get_tqf5_autofill(
 
     return {
         "is_draft_exist": False,
-        "message": "à¸ªà¸£à¹‰à¸²à¸‡à¸Ÿà¸­à¸£à¹Œà¸¡à¸•à¸±à¹‰à¸‡à¸•à¹‰à¸™à¹€à¸£à¸µà¸¢à¸šà¸£à¹‰à¸­à¸¢à¹à¸¥à¹‰à¸§",
+        "message": "สร้างฟอร์มตั้งต้นเรียบร้อยแล้ว",
         "data": auto_fill_data
     }
 
@@ -441,7 +441,7 @@ async def create_tqf5(
     if current_user.role not in ["admin", "staff","headMajor","headmajor","teacher"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="à¸„à¸¸à¸“à¹„à¸¡à¹ˆà¸¡à¸µà¸ªà¸´à¸—à¸˜à¸´à¹Œà¸ªà¸£à¹‰à¸²à¸‡à¹€à¸­à¸à¸ªà¸²à¸£ à¸¡à¸„à¸­.5",
+            detail="คุณไม่มีสิทธิ์สร้างเอกสาร มคอ.5",
         )
 
     document_data = data.model_dump(mode="json", exclude_none=True)
@@ -451,7 +451,7 @@ async def create_tqf5(
     if not course_master:
             raise HTTPException(
                 status_code=404, 
-                detail=f"à¹„à¸¡à¹ˆà¸žà¸šà¸£à¸²à¸¢à¸§à¸´à¸Šà¸²à¸£à¸«à¸±à¸ª ID: {data.course_id} à¹ƒà¸™à¸£à¸°à¸šà¸š à¸à¸£à¸¸à¸“à¸²à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¸­à¸µà¸à¸„à¸£à¸±à¹‰à¸‡"
+                detail=f"ไม่พบรายวิชารหัส ID: {data.course_id} ในระบบ กรุณาตรวจสอบอีกครั้ง"
             )
 
     check_tqf5_writer_permission(data.course_id, db, current_user)
@@ -473,7 +473,7 @@ async def create_tqf5(
 
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"à¹€à¸à¸´à¸”à¸‚à¹‰à¸­à¸œà¸´à¸”à¸žà¸¥à¸²à¸”à¹ƒà¸™à¸à¸²à¸£à¸šà¸±à¸™à¸—à¸¶à¸ à¸¡à¸„à¸­.5: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาดในการบันทึก มคอ.5: {str(e)}")
     
 @router.get("/")
 async def get_all_tqf5(
@@ -532,7 +532,7 @@ async def get_tqf5_detail(
     ).filter(TQF5Main.id == tqf5_id).first()
     
     if not tqf5_data:
-        raise HTTPException(status_code=404, detail=f"à¹„à¸¡à¹ˆà¸žà¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥ à¸¡à¸„à¸­.5 à¸£à¸«à¸±à¸ª: {tqf5_id}")
+        raise HTTPException(status_code=404, detail=f"ไม่พบข้อมูล มคอ.5 รหัส: {tqf5_id}")
 
     user_role = current_user.role.lower()
 
@@ -541,14 +541,14 @@ async def get_tqf5_detail(
 
     elif user_role == "staff":
         if tqf5_data.department_id != current_user.department_id:
-            raise HTTPException(status_code=403, detail="à¸„à¸¸à¸“à¹„à¸¡à¹ˆà¸¡à¸µà¸ªà¸´à¸—à¸˜à¸´à¹Œà¹€à¸‚à¹‰à¸²à¸–à¸¶à¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ à¸¡à¸„à¸­.5 à¸‚à¸­à¸‡à¸ªà¸²à¸‚à¸²à¸­à¸·à¹ˆà¸™")
+            raise HTTPException(status_code=403, detail="คุณไม่มีสิทธิ์เข้าถึงข้อมูล มคอ.5 ของสาขาอื่น")
 
     elif user_role in ["headmajor", "teacher"]:
         if tqf5_data.creator_id != current_user.id:
-            raise HTTPException(status_code=403, detail="à¸„à¸¸à¸“à¹„à¸¡à¹ˆà¸¡à¸µà¸ªà¸´à¸—à¸˜à¸´à¹Œà¹€à¸‚à¹‰à¸²à¸–à¸¶à¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ à¸¡à¸„à¸­.5 à¸™à¸µà¹‰")
+            raise HTTPException(status_code=403, detail="คุณไม่มีสิทธิ์เข้าถึงข้อมูล มคอ.5 นี้")
             
     else:
-        raise HTTPException(status_code=403, detail="à¸„à¸¸à¸“à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸£à¸±à¸šà¸­à¸™à¸¸à¸à¸²à¸•à¹ƒà¸«à¹‰à¸”à¸¹à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸™à¸µà¹‰")
+        raise HTTPException(status_code=403, detail="คุณไม่ได้รับอนุญาตให้ดูข้อมูลนี้")
 
     return tqf5_data
     
@@ -572,30 +572,30 @@ async def update_tqf5(
 ):
     existing_tqf5 = db.query(TQF5Main).filter(TQF5Main.id == tqf5_id).first()
     if not existing_tqf5:
-        raise HTTPException(status_code=404, detail="à¹„à¸¡à¹ˆà¸žà¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥ à¸¡à¸„à¸­.5 à¸—à¸µà¹ˆà¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¹à¸à¹‰à¹„à¸‚")
+        raise HTTPException(status_code=404, detail="ไม่พบข้อมูล มคอ.5 ที่ต้องการแก้ไข")
 
     user_role = current_user.role.lower()
 
     if existing_tqf5.status != "draft":
         raise HTTPException(
             status_code=400,
-            detail="à¹à¸à¹‰à¹„à¸‚à¹„à¸¡à¹ˆà¹„à¸”à¹‰ à¹€à¸™à¸·à¹ˆà¸­à¸‡à¸ˆà¸²à¸à¹€à¸­à¸à¸ªà¸²à¸£à¸–à¸¹à¸à¸ªà¹ˆà¸‡à¹à¸¥à¹‰à¸§",
+            detail="แก้ไขไม่ได้ เนื่องจากเอกสารถูกส่งแล้ว",
         )
     
     if user_role in ["admin", "staff"]:
         
         if existing_tqf5.department_id != current_user.department_id:
-            raise HTTPException(status_code=403, detail="à¸„à¸¸à¸“à¹„à¸¡à¹ˆà¸¡à¸µà¸ªà¸´à¸—à¸˜à¸´à¹Œà¹à¸à¹‰à¹„à¸‚à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ à¸¡à¸„à¸­.5 à¸‚à¸­à¸‡à¸ªà¸²à¸‚à¸²à¸­à¸·à¹ˆà¸™")
+            raise HTTPException(status_code=403, detail="คุณไม่มีสิทธิ์แก้ไขข้อมูล มคอ.5 ของสาขาอื่น")
             
         if existing_tqf5.creator_id != current_user.id:
-            raise HTTPException(status_code=403, detail="à¹à¸à¹‰à¹„à¸‚à¹„à¸”à¹‰à¹€à¸‰à¸žà¸²à¸°à¹€à¸­à¸à¸ªà¸²à¸£à¸—à¸µà¹ˆà¸„à¸¸à¸“à¸ªà¸£à¹‰à¸²à¸‡à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™")
+            raise HTTPException(status_code=403, detail="แก้ไขได้เฉพาะเอกสารที่คุณสร้างเท่านั้น")
 
     elif user_role in ["headmajor", "teacher"]:
         if existing_tqf5.creator_id != current_user.id:
-            raise HTTPException(status_code=403, detail="à¹à¸à¹‰à¹„à¸‚à¹„à¸”à¹‰à¹€à¸‰à¸žà¸²à¸°à¹€à¸­à¸à¸ªà¸²à¸£à¸—à¸µà¹ˆà¸„à¸¸à¸“à¸ªà¸£à¹‰à¸²à¸‡à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™")
+            raise HTTPException(status_code=403, detail="แก้ไขได้เฉพาะเอกสารที่คุณสร้างเท่านั้น")
         
     else:
-        raise HTTPException(status_code=403, detail="à¸„à¸¸à¸“à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸£à¸±à¸šà¸­à¸™à¸¸à¸à¸²à¸•à¹ƒà¸«à¹‰à¹à¸à¹‰à¹„à¸‚à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸™à¸µà¹‰")
+        raise HTTPException(status_code=403, detail="คุณไม่ได้รับอนุญาตให้แก้ไขข้อมูลนี้")
 
     document_data = data.model_dump(mode="json", exclude_none=True)
     
@@ -604,7 +604,7 @@ async def update_tqf5(
     if not course_master:
         raise HTTPException(
             status_code=404, 
-            detail=f"à¹„à¸¡à¹ˆà¸žà¸šà¸£à¸²à¸¢à¸§à¸´à¸Šà¸²à¸£à¸«à¸±à¸ª ID: {data.course_id} à¹ƒà¸™à¸£à¸°à¸šà¸š à¸à¸£à¸¸à¸“à¸²à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¸­à¸µà¸à¸„à¸£à¸±à¹‰à¸‡"
+            detail=f"ไม่พบรายวิชารหัส ID: {data.course_id} ในระบบ กรุณาตรวจสอบอีกครั้ง"
         )
 
     check_tqf5_writer_permission(data.course_id, db, current_user)
@@ -617,11 +617,11 @@ async def update_tqf5(
         save_tqf5_details(tqf5_id, document_data, db)
 
         db.commit()
-        return {"status": "success", "message": "à¸­à¸±à¸›à¹€à¸”à¸•à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ à¸¡à¸„à¸­.5 à¹€à¸£à¸µà¸¢à¸šà¸£à¹‰à¸­à¸¢à¹à¸¥à¹‰à¸§"}
+        return {"status": "success", "message": "อัปเดตข้อมูล มคอ.5 เรียบร้อยแล้ว"}
 
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"à¹€à¸à¸´à¸”à¸‚à¹‰à¸­à¸œà¸´à¸”à¸žà¸¥à¸²à¸”à¹ƒà¸™à¸à¸²à¸£à¹à¸à¹‰à¹„à¸‚ à¸¡à¸„à¸­.5: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาดในการแก้ไข มคอ.5: {str(e)}")
     
 @router.patch("/{tqf5_id}/submit")
 async def submit_tqf5(
@@ -631,14 +631,14 @@ async def submit_tqf5(
 ):
     target_tqf5 = db.query(TQF5Main).filter(TQF5Main.id == tqf5_id).first()
     if not target_tqf5:
-        raise HTTPException(status_code=404, detail="à¹„à¸¡à¹ˆà¸žà¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥ à¸¡à¸„à¸­.5")
+        raise HTTPException(status_code=404, detail="ไม่พบข้อมูล มคอ.5")
 
     if current_user.role.lower() not in ["admin", "staff"]:
         if target_tqf5.creator_id != current_user.id:
-            raise HTTPException(status_code=403, detail="à¸„à¸¸à¸“à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆà¹€à¸ˆà¹‰à¸²à¸‚à¸­à¸‡à¹€à¸­à¸à¸ªà¸²à¸£à¹ƒà¸šà¸™à¸µà¹‰")
+            raise HTTPException(status_code=403, detail="คุณไม่ใช่เจ้าของเอกสารใบนี้")
         
     if target_tqf5.status != "draft":
-        raise HTTPException(status_code=400, detail="à¹€à¸­à¸à¸ªà¸²à¸£à¸™à¸µà¹‰à¸–à¸¹à¸à¸ªà¹ˆà¸‡à¹€à¸‚à¹‰à¸²à¸£à¸°à¸šà¸šà¹„à¸›à¹à¸¥à¹‰à¸§ à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸ªà¹ˆà¸‡à¸‹à¹‰à¸³à¹„à¸”à¹‰")
+        raise HTTPException(status_code=400, detail="เอกสารนี้ถูกส่งเข้าระบบไปแล้ว ไม่สามารถส่งซ้ำได้")
 
     check_tqf5_writer_permission(target_tqf5.course_id, db, current_user)
 
@@ -647,12 +647,12 @@ async def submit_tqf5(
         db.commit()
         return {
             "status": "success", 
-            "message": "à¸ªà¹ˆà¸‡à¹€à¸­à¸à¸ªà¸²à¸£ à¸¡à¸„à¸­.5 à¹€à¸£à¸µà¸¢à¸šà¸£à¹‰à¸­à¸¢à¹à¸¥à¹‰à¸§",
+            "message": "ส่งเอกสาร มคอ.5 เรียบร้อยแล้ว",
             "new_status": target_tqf5.status
         }
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"à¹€à¸à¸´à¸”à¸‚à¹‰à¸­à¸œà¸´à¸”à¸žà¸¥à¸²à¸”: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาด: {str(e)}")
     
 @router.delete("/{tqf5_id}")
 async def delete_tqf5(
@@ -663,14 +663,14 @@ async def delete_tqf5(
     target_tqf5 = db.query(TQF5Main).filter(TQF5Main.id == tqf5_id).first()
     
     if not target_tqf5:
-        raise HTTPException(status_code=404, detail="à¹„à¸¡à¹ˆà¸žà¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥ à¸¡à¸„à¸­.5 à¸—à¸µà¹ˆà¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¸¥à¸š")
+        raise HTTPException(status_code=404, detail="ไม่พบข้อมูล มคอ.5 ที่ต้องการลบ")
 
     user_role = current_user.role.lower()
     
     if target_tqf5.status != "draft":
             raise HTTPException(
                 status_code=400,
-                detail="à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸¥à¸šà¹„à¸”à¹‰ à¹€à¸™à¸·à¹ˆà¸­à¸‡à¸ˆà¸²à¸à¹€à¸­à¸à¸ªà¸²à¸£à¸–à¸¹à¸à¸ªà¹ˆà¸‡à¹€à¸‚à¹‰à¸²à¸£à¸°à¸šà¸šà¹„à¸›à¹à¸¥à¹‰à¸§"
+                detail="ไม่สามารถลบได้ เนื่องจากเอกสารถูกส่งเข้าระบบไปแล้ว"
         )
 
     check_tqf5_writer_permission(target_tqf5.course_id, db, current_user)
@@ -680,24 +680,25 @@ async def delete_tqf5(
         if target_tqf5.department_id != current_user.department_id:
                 raise HTTPException(
                     status_code=403,
-                    detail="à¸„à¸¸à¸“à¹„à¸¡à¹ˆà¸¡à¸µà¸ªà¸´à¸—à¸˜à¸´à¹Œà¸¥à¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥ à¸¡à¸„à¸­.5 à¸‚à¸­à¸‡à¸ªà¸²à¸‚à¸²à¸­à¸·à¹ˆà¸™"
+                    detail="คุณไม่มีสิทธิ์ลบข้อมูล มคอ.5 ของสาขาอื่น"
             )
 
     elif user_role in ["headmajor", "teacher"]:
         if target_tqf5.creator_id != current_user.id:
-            raise HTTPException(status_code=403, detail="à¸¥à¸šà¹„à¸”à¹‰à¹€à¸‰à¸žà¸²à¸°à¹€à¸­à¸à¸ªà¸²à¸£à¸—à¸µà¹ˆà¸„à¸¸à¸“à¸ªà¸£à¹‰à¸²à¸‡à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™")
+            raise HTTPException(status_code=403, detail="ลบได้เฉพาะเอกสารที่คุณสร้างเท่านั้น")
                     
     else:
-        raise HTTPException(status_code=403, detail="à¸„à¸¸à¸“à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸£à¸±à¸šà¸­à¸™à¸¸à¸à¸²à¸•à¹ƒà¸«à¹‰à¸¥à¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸™à¸µà¹‰")
+        raise HTTPException(status_code=403, detail="คุณไม่ได้รับอนุญาตให้ลบข้อมูลนี้")
 
     try:
         db.delete(target_tqf5)
         db.commit()
         return {
             "status": "success", 
-            "message": f"à¸¥à¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥ à¸¡à¸„à¸­.5 (ID: {tqf5_id}) à¹€à¸£à¸µà¸¢à¸šà¸£à¹‰à¸­à¸¢à¹à¸¥à¹‰à¸§"
+            "message": f"ลบข้อมูล มคอ.5 (ID: {tqf5_id}) เรียบร้อยแล้ว"
         }
         
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"à¹€à¸à¸´à¸”à¸‚à¹‰à¸­à¸œà¸´à¸”à¸žà¸¥à¸²à¸”à¹ƒà¸™à¸à¸²à¸£à¸¥à¸š: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาดในการลบ: {str(e)}")
+
