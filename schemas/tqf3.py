@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
-from datetime import date
+from datetime import date, datetime
 
 class InstructorBase(BaseModel):
     name: Optional[str] = None
@@ -40,7 +40,7 @@ class TQF3Create(BaseModel):
     location: Optional[str] = None
     pre_requisite: Optional[str] = None
     co_requisite: Optional[str] = None
-    updated_at: Optional[date] = None
+    updated_at: Optional[datetime] = None
     course_description: Optional[str] = None
     objectives: Optional[str] = None
     plo_mapping: Optional[str] = None
@@ -73,7 +73,7 @@ class TQF3Create(BaseModel):
                 "section_group": "IS.267",
                 "student_count": 45,
                 "location": "อาคารคณะบริหารธุรกิจ มทร.ตะวันออก",
-                "updated_at": "2026-05-12",
+                "updated_at": "2026-05-12T20:34:02",
                 "course_description": "ศึกษาเกี่ยวกับระบบฐานข้อมูล การออกแบบ Schema และการใช้งานคำสั่ง SQL เบื้องต้น",
                 "objectives": "เพื่อให้นักศึกษาสามารถออกแบบและพัฒนาระบบฐานข้อมูลได้",
                 "lecture_hours": 3.0,
@@ -151,7 +151,10 @@ class TQF3Response(BaseModel):
     location: Optional[str] = None
     pre_requisite: Optional[str] = None
     co_requisite: Optional[str] = None
-    updated_at: Optional[date] = None
+    
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    
     course_description: Optional[str] = None
     objectives: Optional[str] = None
     plo_mapping: Optional[str] = None
@@ -164,10 +167,10 @@ class TQF3Response(BaseModel):
     main_textbooks: Optional[str] = None
     references: Optional[str] = None
     
-    instructors: Optional[List[InstructorBase]] = []
-    clos: Optional[List[CLOBase]] = []
-    development_plans: Optional[List[DevelopmentBase]] = []
-    lesson_plans: Optional[List[LessonPlanBase]] = []
-    evaluation_plans: Optional[List[EvaluationBase]] = []
+    instructors: Optional[List[InstructorResponse]] = []
+    clos: Optional[List[CLOResponse]] = []
+    development_plans: Optional[List[DevelopmentResponse]] = []
+    lesson_plans: Optional[List[LessonPlanResponse]] = []
+    evaluation_plans: Optional[List[EvaluationResponse]] = []
 
     model_config = {"from_attributes": True}

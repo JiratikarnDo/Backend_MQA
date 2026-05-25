@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -5,6 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.Interface.sql_db import getDb
 from app.dependencies.auth import get_current_user
 from app.models.courses import Courses
+from app.models.tqf_deadlines import TQFDeadlines
 from app.models.users import Users
 from schemas.tqf3 import TQF3Create, TQF3Response
 from app.models.tqf3 import TQF3Main, TQF3Instructor, TQF3CLO, TQF3Development, TQF3LessonPlan, TQF3Evaluation
@@ -27,6 +29,34 @@ def build_tqf3_snap_data(course_master):
         snap_data["course_name_en_snap"] = getattr(course_master, "course_name_en", None)
 
     return snap_data
+
+def check_tqf_deadline(db: Session, tqf_types: list):
+    now = datetime.now()
+    
+    active_deadline = db.query(TQFDeadlines).filter(
+        TQFDeadlines.is_active == True,
+        TQFDeadlines.tqf_type.in_(tqf_types)
+    ).first()
+
+    if not active_deadline:
+        raise HTTPException(
+            status_code=400, 
+            detail="ขณะนี้ยังไม่มีการเปิดรอบให้จัดทำเอกสารในระบบ"
+        )
+
+    if active_deadline.start_date and now < active_deadline.start_date:
+        start_str = active_deadline.start_date.strftime("%d/%m/%Y %H:%M")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"ระบบยังไม่เปิดให้ดำเนินการ (จะเปิดระบบในวันที่ {start_str})"
+        )
+
+    if active_deadline.end_date and now > active_deadline.end_date:
+        end_str = active_deadline.end_date.strftime("%d/%m/%Y %H:%M")
+        raise HTTPException(
+            status_code=400, 
+            detail=f"หมดเขตการดำเนินการแล้ว (ปิดระบบเมื่อ {end_str})"
+        )
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
@@ -172,30 +202,107 @@ async def get_tqf3_autofill(
 
 @router.get("/{tqf3_id}", response_model=TQF3Response)
 async def get_tqf3_detail(
-    tqf3_id: int, 
+    tqf3_id: int,
     db: Session = Depends(getDb),
     current_user = Depends(get_current_user)
 ):
-    tqf3_data = db.query(TQF3Main).options(
-        joinedload(TQF3Main.instructors),
-        joinedload(TQF3Main.clos),
-        joinedload(TQF3Main.development_plans),
-        joinedload(TQF3Main.lesson_plans),
-        joinedload(TQF3Main.evaluation_plans)
-    ).filter(TQF3Main.id == tqf3_id).first()
+    tqf3_data = db.query(TQF3Main).filter(TQF3Main.id == tqf3_id).first()
 
     if not tqf3_data:
-        raise HTTPException(status_code=404, detail=f"ไม่พบข้อมูล มคอ. 3 รหัส: {tqf3_id}")
+        raise HTTPException(
+            status_code=404,
+            detail=f"ไม่พบข้อมูล มคอ. 3 รหัส: {tqf3_id}"
+        )
 
-    user_role = (current_user.role or "").lower()
+    user_role = (current_user.role or "").lower().replace("_", "")
 
-    if user_role in ["staff", "headmajor", "teacher"]:
+    if user_role in ["admin", "dean"]:
+        pass
+    elif user_role in ["staff", "headmajor", "teacher"]:
         if tqf3_data.department_id != current_user.department_id:
-            raise HTTPException(status_code=403, detail="คุณไม่มีสิทธิ์เข้าถึงข้อมูล มคอ. 3 ของสาขาอื่น")
-    elif user_role not in ["admin", "dean"]:
-        raise HTTPException(status_code=403, detail="บทบาทของคุณไม่ได้รับอนุญาตให้ดูข้อมูลนี้")
+            raise HTTPException(
+                status_code=403,
+                detail="คุณไม่มีสิทธิ์เข้าถึงข้อมูล มคอ. 3 ของสาขาอื่น"
+            )
+    else:
+        raise HTTPException(
+            status_code=403,
+            detail="บทบาทของคุณไม่ได้รับอนุญาตให้ดูข้อมูลนี้"
+        )
 
-    return tqf3_data
+    instructors = db.query(TQF3Instructor).filter(TQF3Instructor.tqf3_id == tqf3_id).all()
+    clos = db.query(TQF3CLO).filter(TQF3CLO.tqf3_id == tqf3_id).all()
+    development_plans = db.query(TQF3Development).filter(TQF3Development.tqf3_id == tqf3_id).all()
+    lesson_plans = db.query(TQF3LessonPlan).filter(TQF3LessonPlan.tqf3_id == tqf3_id).all()
+    evaluation_plans = db.query(TQF3Evaluation).filter(TQF3Evaluation.tqf3_id == tqf3_id).all()
+
+    return {
+        "id": tqf3_data.id,
+        "course_id": tqf3_data.course_id,
+        "curriculum_name": tqf3_data.curriculum_name,
+        "course_category": tqf3_data.course_category,
+        "semester": tqf3_data.semester,
+        "academic_year": tqf3_data.academic_year,
+        "year_level": tqf3_data.year_level,
+        "section_group": tqf3_data.section_group,
+        "student_count": tqf3_data.student_count,
+        "location": tqf3_data.location,
+        "pre_requisite": tqf3_data.pre_requisite,
+        "co_requisite": tqf3_data.co_requisite,
+        "updated_at": tqf3_data.updated_at,
+        "course_description": tqf3_data.course_description,
+        "objectives": tqf3_data.objectives,
+        "plo_mapping": tqf3_data.plo_mapping,
+        "lecture_hours": tqf3_data.lecture_hours,
+        "practice_hours": tqf3_data.practice_hours,
+        "self_study_hours": tqf3_data.self_study_hours,
+        "contact_detail": tqf3_data.contact_detail,
+        "agreements": tqf3_data.agreements,
+        "integration_detail": tqf3_data.integration_detail,
+        "main_textbooks": tqf3_data.main_textbooks,
+        "references": tqf3_data.references,
+        "instructors": [
+            {
+                "name": item.name
+            }
+            for item in instructors
+        ],
+        "clos": [
+            {
+                "number": item.number,
+                "detail": item.detail
+            }
+            for item in clos
+        ],
+        "development_plans": [
+            {
+                "clo_number": item.clo_number,
+                "teaching_strategy": item.teaching_strategy,
+                "evaluation_strategy": item.evaluation_strategy
+            }
+            for item in development_plans
+        ],
+        "lesson_plans": [
+            {
+                "week": item.week,
+                "topic": item.topic,
+                "clos": item.clos,
+                "hours": item.hours,
+                "activities_media": item.activities_media,
+                "instructor_name": item.instructor_name
+            }
+            for item in lesson_plans
+        ],
+        "evaluation_plans": [
+            {
+                "activity": item.activity,
+                "clo_number": item.clo_number,
+                "evaluation_week": item.evaluation_week,
+                "proportion_percent": item.proportion_percent
+            }
+            for item in evaluation_plans
+        ]
+    }
 
 
 @router.put("/{tqf3_id}")
@@ -259,7 +366,6 @@ async def update_tqf3(
         existing_tqf3.references = data.references
         existing_tqf3.updated_at = data.updated_at
 
-        # ลบตารางลูกของเก่าทิ้งเพื่อเตรียม Insert ใหม่ (อัปเดตแบบ Replace)
         db.query(TQF3Instructor).filter(TQF3Instructor.tqf3_id == tqf3_id).delete()
         db.query(TQF3CLO).filter(TQF3CLO.tqf3_id == tqf3_id).delete()
         db.query(TQF3Development).filter(TQF3Development.tqf3_id == tqf3_id).delete()
@@ -310,6 +416,9 @@ async def submit_tqf3(
     if user_role not in ["admin", "staff"]:
         if target_tqf3.creator_id != current_user.id:
             raise HTTPException(status_code=403, detail="คุณไม่ใช่เจ้าของเอกสารใบนี้")
+        
+    if user_role not in ["admin", "staff"]:
+        check_tqf_deadline(db, ["มคอ.3", "mqa3"])
         
     if target_tqf3.status != "draft":
         raise HTTPException(status_code=400, detail="เอกสารนี้ถูกส่งเข้าระบบไปแล้ว ไม่สามารถส่งซ้ำได้")

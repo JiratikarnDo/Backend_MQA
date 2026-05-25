@@ -3,12 +3,11 @@ from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
 from app.Interface.sql_db import getDb
-from app.dependencies.auth import check_admin_staff_role
+from app.dependencies.auth import check_admin_staff_role, get_current_user
 from app.models.tqf_deadlines import TQFDeadlines
 from schemas.tqf_deadlines import TQFDeadlineCreate, TQFDeadlineResponse
 
 router = APIRouter(prefix="/tqf", tags=["TQF Deadlines"])
-
 
 @router.post("/deadlines", response_model=TQFDeadlineResponse)
 async def create_tqf_deadline(
@@ -65,8 +64,15 @@ async def create_tqf_deadline(
 @router.get("/deadlines", response_model=List[TQFDeadlineResponse])
 async def get_all_tqf_deadlines(
     db: Session = Depends(getDb),
-    current_user = Depends(check_admin_staff_role)
+    current_user = Depends(get_current_user)
 ):
+    
+    if current_user.role not in ["admin", "staff", "headmajor", "dean","teacher"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="เฉพาะเจ้าหน้าที่และผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
+        )
+    
     return db.query(TQFDeadlines).order_by(
         TQFDeadlines.academic_year.desc(), 
         TQFDeadlines.semester.desc()
@@ -78,7 +84,7 @@ async def update_tqf_deadline(
     deadline_id: int, 
     data: TQFDeadlineCreate,
     db: Session = Depends(getDb),
-    current_user = Depends(check_admin_staff_role)
+    current_user = Depends(get_current_user)
 ):
     deadline = db.query(TQFDeadlines).filter(TQFDeadlines.id == deadline_id).first()
     if not deadline:
@@ -136,3 +142,31 @@ async def delete_tqf_deadline(
         )
 
     return {"message": "ลบข้อมูลสำเร็จ"}
+
+@router.get("/deadline-status/{tqf_type}")
+async def get_deadline_status(tqf_type: str, db: Session = Depends(getDb),
+                              current_user = Depends(get_current_user)):
+    
+    if current_user.role not in ["admin", "staff", "headmajor", "dean","teacher"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="เฉพาะเจ้าหน้าที่และผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
+        )
+
+    now = datetime.now()
+    
+    active_deadline = db.query(TQFDeadlines).filter(
+        TQFDeadlines.is_active == True,
+        TQFDeadlines.tqf_type == tqf_type
+    ).first()
+
+    if not active_deadline:
+        return {"is_open": False, "message": "ยังไม่เปิดระบบ"}
+
+    if active_deadline.start_date and now < active_deadline.start_date:
+        return {"is_open": False, "message": f"เปิดระบบ {active_deadline.start_date.strftime('%d/%m/%Y')}"}
+
+    if active_deadline.end_date and now > active_deadline.end_date:
+        return {"is_open": False, "message": "หมดเขตแล้ว"}
+
+    return {"is_open": True, "message": "เปิดให้จัดทำ"}

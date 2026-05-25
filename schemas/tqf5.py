@@ -209,7 +209,7 @@ class Section12Base(BaseModel):
     withdrawn: Optional[int] = None
     grades: Optional[List[GradeRowBase]] = []
     abnormalFactor: Optional[str] = None
-    tolerance: Optional[List[ToleranceBase]] = []
+    tolerance: Optional[List[ToleranceBase]] = None
 
 class IssueRowBase(BaseModel):
     issue: Optional[str] = None
@@ -254,22 +254,22 @@ class Section16Base(BaseModel):
 
 class TQF5Create(BaseModel):
     course_id: Optional[int] = None
-    section1: Optional[Section1Base] = None
-    section2: Optional[Section2Base] = None
-    section3: Optional[Section3Base] = None
-    section4: Optional[Section4Base] = None
-    section5: Optional[Section5Base] = None
-    section6: Optional[Section6Base] = None
-    section7: Optional[Section7Base] = None
-    section8: Optional[Section8Base] = None
-    section9: Optional[Section9Base] = None
-    section10: Optional[Section10Base] = None
-    section11: Optional[Section11Base] = None
-    section12: Optional[Section12Base] = None
-    section13: Optional[Section13Base] = None
-    section14: Optional[Section14Base] = None
-    section15: Optional[Section15Base] = None
-    section16: Optional[Section16Base] = None
+    section1: Section1Base
+    section2: Section2Base
+    section3: Section3Base
+    section4: Section4Base
+    section5: Section5Base
+    section6: Section6Base
+    section7: Section7Base
+    section8: Section8Base
+    section9: Section9Base
+    section10: Section10Base
+    section11: Section11Base
+    section12: Section12Base
+    section13: Section13Base
+    section14: Section14Base
+    section15: Section15Base
+    section16: Section16Base
 
     model_config = ConfigDict(
         str_strip_whitespace=True,
