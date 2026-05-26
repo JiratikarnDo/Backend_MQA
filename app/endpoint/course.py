@@ -1,6 +1,5 @@
-import os
 from typing import List, Optional
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel
 from app.Interface.sql_db import getDb
@@ -9,8 +8,6 @@ from app.endpoint.auth import GoogleLoginRequest
 from app.models.courses import Courses
 from app.models.organization import Departments
 from app.models.subject_category import SubjectCategory, SubjectSubGroup
-from app.services.docxImportService import extractCoursesFromDocx
-from app.services.wordConvertService import convertWordFileToDocxBytes
 from app.models.users import Users
 from app.endpoint.masterdata import fetch_from_rmutto
 from schemas.course import CourseCreate, CourseReponseAll, CourseResponse, CourseUpdate
@@ -242,92 +239,6 @@ async def add_subject_from_form(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาดในการบันทึกรายวิชา: {str(e)}")
-
-
-@router.post("/import-docx")
-async def import_subjects_from_docx(
-    files: List[UploadFile] = File(...),
-    courseLevel: str = Form("bachelor"),
-    departmentId: Optional[int] = Form(None),
-    db: Session = Depends(getDb),
-    current_user: Users = Depends(check_admin_staff_role),
-):
-    if not files:
-        raise HTTPException(status_code=400, detail="กรุณาเลือกไฟล์ .doc หรือ .docx อย่างน้อย 1 ไฟล์")
-
-    if len(files) > 2:
-        raise HTTPException(status_code=400, detail="อัปโหลดได้สูงสุด 2 ไฟล์เท่านั้น")
-
-    importedSubjects = []
-    fileResults = []
-    createdCount = 0
-    updatedCount = 0
-
-    try:
-        for file in files:
-            if not file.filename:
-                continue
-
-            if file.filename.startswith("~$"):
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"ไฟล์ {file.filename} เป็นไฟล์ชั่วคราวของ Microsoft Word กรุณาเลือกไฟล์จริง",
-                )
-
-            if not file.filename.lower().endswith((".doc", ".docx")):
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"ไฟล์ {file.filename} ไม่ใช่ไฟล์ .doc หรือ .docx",
-                )
-
-            fileBytes = await file.read()
-
-            if not fileBytes:
-                raise HTTPException(status_code=400, detail=f"ไฟล์ {file.filename} ว่าง")
-
-            docxBytes = convertWordFileToDocxBytes(fileBytes, file.filename)
-            extractedCourses = extractCoursesFromDocx(docxBytes)
-            fileImportedCount = 0
-
-            for extractedCourse in extractedCourses:
-                extractedCourse["curriculumLevel"] = courseLevel or extractedCourse.get("curriculumLevel") or "bachelor"
-                extractedCourse["departmentId"] = departmentId
-
-                payload = SubjectDocxPayload(**extractedCourse)
-                course, isCreated = saveSubjectPayload(db, payload, current_user)
-
-                if isCreated:
-                    createdCount += 1
-                else:
-                    updatedCount += 1
-
-                fileImportedCount += 1
-                importedSubjects.append(subjectPayloadToResponse(course, payload.model_dump()))
-
-            fileResults.append(
-                {
-                    "fileName": file.filename,
-                    "courseCount": len(extractedCourses),
-                    "importedCount": fileImportedCount,
-                }
-            )
-
-        db.commit()
-
-        return {
-            "message": "นำเข้ารายวิชาจาก Word สำเร็จ",
-            "createdCount": createdCount,
-            "updatedCount": updatedCount,
-            "totalCount": len(importedSubjects),
-            "fileResults": fileResults,
-            "subjects": importedSubjects,
-        }
-    except HTTPException:
-        db.rollback()
-        raise
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาดในการนำเข้าไฟล์ Word: {str(e)}")
 
 
 @router.get("/")

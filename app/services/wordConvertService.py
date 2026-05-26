@@ -1,4 +1,5 @@
 from io import BytesIO
+import base64
 from pathlib import Path
 import os
 import shutil
@@ -23,6 +24,24 @@ def findSofficePath() -> str:
     windowsPaths = [
         r"C:\Program Files\LibreOffice\program\soffice.exe",
         r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+    ]
+
+    for path in windowsPaths:
+        if Path(path).exists():
+            return path
+
+    return ""
+
+
+def findMicrosoftWordPath() -> str:
+    wordPath = shutil.which("winword")
+
+    if wordPath:
+        return wordPath
+
+    windowsPaths = [
+        r"C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE",
+        r"C:\Program Files (x86)\Microsoft Office\root\Office16\WINWORD.EXE",
     ]
 
     for path in windowsPaths:
@@ -107,13 +126,7 @@ def convertDocToDocxBytes(fileBytes: bytes, fileName: str) -> bytes:
     sofficePath = findSofficePath()
 
     if not sofficePath:
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                "ไม่พบ LibreOffice ในเครื่อง Backend จึงแปลงไฟล์ .doc ไม่ได้ "
-                "กรุณาติดตั้ง LibreOffice หรือแปลงไฟล์เป็น .docx ก่อนอัปโหลด"
-            ),
-        )
+        return convertDocToDocxBytesWithMicrosoftWord(fileBytes, fileName)
 
     safeFileName = Path(fileName or "input.doc").name
 
@@ -171,6 +184,76 @@ def convertDocToDocxBytes(fileBytes: bytes, fileName: str) -> bytes:
             )
 
         convertedBytes = outputFiles[0].read_bytes()
+
+    return applyThaiFontToDocxBytes(convertedBytes)
+
+
+def convertDocToDocxBytesWithMicrosoftWord(fileBytes: bytes, fileName: str) -> bytes:
+    if not findMicrosoftWordPath():
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "ไม่พบ LibreOffice หรือ Microsoft Word ในเครื่อง Backend จึงแปลงไฟล์ .doc ไม่ได้ "
+                "กรุณาติดตั้ง LibreOffice หรือแปลงไฟล์เป็น .docx ก่อนอัปโหลด"
+            ),
+        )
+
+    safeFileName = Path(fileName or "input.doc").name
+
+    with tempfile.TemporaryDirectory() as tempDir:
+        tempPath = Path(tempDir)
+        inputPath = tempPath / safeFileName
+        outputPath = tempPath / f"{inputPath.stem}.docx"
+        inputPath.write_bytes(fileBytes)
+
+        script = f"""
+$ErrorActionPreference = 'Stop'
+$word = $null
+$document = $null
+try {{
+    $word = New-Object -ComObject Word.Application
+    $word.Visible = $false
+    $word.DisplayAlerts = 0
+    $document = $word.Documents.Open('{str(inputPath)}', $false, $true)
+    $document.SaveAs([ref]'{str(outputPath)}', [ref]16)
+}} finally {{
+    if ($document -ne $null) {{ $document.Close([ref]$false) }}
+    if ($word -ne $null) {{ $word.Quit() }}
+}}
+"""
+        encodedScript = base64.b64encode(script.encode("utf-16le")).decode("ascii")
+
+        try:
+            result = subprocess.run(
+                [
+                    "powershell",
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-EncodedCommand",
+                    encodedScript,
+                ],
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+        except subprocess.TimeoutExpired:
+            raise HTTPException(
+                status_code=500,
+                detail="แปลงไฟล์ .doc ไม่สำเร็จ: Microsoft Word ใช้เวลานานเกินไป",
+            )
+
+        if result.returncode != 0 or not outputPath.exists():
+            raise HTTPException(
+                status_code=500,
+                detail=(
+                    "แปลงไฟล์ .doc เป็น .docx ไม่สำเร็จด้วย Microsoft Word "
+                    f"stdout={result.stdout} stderr={result.stderr}"
+                ),
+            )
+
+        convertedBytes = outputPath.read_bytes()
 
     return applyThaiFontToDocxBytes(convertedBytes)
 

@@ -69,3 +69,8 @@ urllib3==2.6.3
 uvicorn==0.42.0
 watchfiles==1.1.1
 websockets==16.0
+
+# โปรแกรมที่ต้องติดตั้งเพิ่มในเครื่อง Backend สำหรับแปลงไฟล์ .doc เป็น .docx
+# หมายเหตุ: LibreOffice ติดตั้งผ่าน pip/requirements.txt ไม่ได้ ให้คัดลอกคำสั่งด้านล่างไปรันใน Terminal
+# winget install --id TheDocumentFoundation.LibreOffice -e
+# choco install libreoffice-fresh -y

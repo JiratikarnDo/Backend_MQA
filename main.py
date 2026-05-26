@@ -1,6 +1,7 @@
 import os
 
 from fastapi import Depends, FastAPI
+from fastapi.openapi.utils import get_openapi
 from sqlmodel import Session
 from sqlalchemy import text
 from app.Interface.sql_db import engine, base, getDb
@@ -17,6 +18,7 @@ from app.endpoint.course_assignment import router as course_assignment_router
 from app.endpoint.tqf3 import router as tqf_router
 from app.endpoint.tqf5 import router as tqf5_router
 from app.endpoint.user import router as users_router
+from app.endpoint.word_import import router as word_import_router
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import app.models
@@ -50,8 +52,40 @@ app.include_router(plo_router)
 app.include_router(tqf_deadlines_router)
 app.include_router(course_opening_router)
 app.include_router(course_assignment_router)
+app.include_router(word_import_router)
 app.include_router(tqf_router)
 app.include_router(tqf5_router)
+
+
+def fix_binary_file_schema(value):
+    if isinstance(value, dict):
+        if value.get("contentMediaType") == "application/octet-stream":
+            value.pop("contentMediaType", None)
+            value["format"] = "binary"
+
+        for child in value.values():
+            fix_binary_file_schema(child)
+
+    if isinstance(value, list):
+        for child in value:
+            fix_binary_file_schema(child)
+
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        routes=app.routes,
+    )
+    fix_binary_file_schema(openapi_schema)
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = custom_openapi
 
 
 @app.get("/")
