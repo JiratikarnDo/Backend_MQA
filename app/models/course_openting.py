@@ -11,24 +11,23 @@ class CourseOpeningRequest(base):
     academic_year = Column(Integer, nullable=False)
     curriculum_name = Column(String(255), nullable=False)
     major_name = Column(String(255), nullable=False)
-    program_type = Column(String(50)) # 4 ปี / เทียบโอน
+    program_type = Column(String(50))
     
-    study_mode = Column(String(100)) # ภาคปกติ / นอกเวลา
+    study_mode = Column(String(100))
     campus = Column(String(100))
     target_group = Column(String(50))
     
-    # สถานะและสิทธิ์
     status = Column(String(20), default="pending")
     user_id = Column(Integer, ForeignKey("users.id"))
     department_id = Column(Integer, ForeignKey("departments.id"))
     
-    # ผู้อนุมัติ (เก็บเป็นชื่อและวันที่)
     head_dept_name = Column(String(255))
     head_dept_signed = Column(Date)
     vice_dean_name = Column(String(255))
     vice_dean_signed = Column(Date)
     dean_name = Column(String(255))
     dean_signed = Column(Date)
+    note = Column(String(500), nullable=True)
 
     is_confirmed = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())
@@ -55,6 +54,7 @@ class RequestedCourseItem(base):
     credits_snapshot = Column(String(50))
 
     request = relationship("CourseOpeningRequest", back_populates="requested_courses")
+    teacher_assignments = relationship("CourseTeacherAssignment", back_populates="requested_course_item", cascade="all, delete-orphan")
 
 class CurriculumResponsiblePerson(base):
     __tablename__ = "curriculum_responsible_persons"

@@ -12,20 +12,30 @@ from schemas.organization import DepartmentResponseSimple
 router = APIRouter(prefix="/departments", tags=["Departments"])
 
 @router.get("/", response_model=List[DepartmentResponseSimple])
-async def get_all_departments(db: Session = Depends(getDb),
-                              current_user: Users = Depends(get_current_user)):
+async def get_all_departments(
+    db: Session = Depends(getDb),
+    current_user = Depends(get_current_user)
+):
+    user_role = (current_user.role or "").lower()
     
-    if current_user.role not in ["admin", "staff", "headmajor"]:
+    if user_role not in ["admin", "staff", "headmajor", "dean"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
+            detail="เฉพาะเจ้าหน้าที่, ผู้ดูแลระบบ, หัวหน้าสาขา หรือคณบดีเท่านั้นที่ทำรายการนี้ได้",
         )
 
-    results = db.query(
+    query = db.query(
         Departments.id,
         Departments.department_name,
         Departments.faculty_id,
         Faculties.faculty_name
-    ).join(Faculties, Departments.faculty_id == Faculties.id).all()
+    ).join(Faculties, Departments.faculty_id == Faculties.id)
+    
+    if user_role in ["admin", "staff", "dean"]:
+        pass 
+    elif user_role == "headmajor":
+        query = query.filter(Departments.id == current_user.department_id)
+        
+    results = query.all()
     
     return results

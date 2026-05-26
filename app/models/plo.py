@@ -10,6 +10,7 @@ sub_plo_course_association = Table(
     Column("sub_plo_id", Integer, ForeignKey("sub_plos.id", ondelete="CASCADE")),
     Column("course_id", Integer, ForeignKey("courses.id", ondelete="CASCADE")),
 )
+sub_plo_courses = sub_plo_course_association
 
 class PLOs(base):
     __tablename__ = "plos"

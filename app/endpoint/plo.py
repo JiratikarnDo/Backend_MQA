@@ -112,8 +112,14 @@ async def get_sub_plos_paged(
     page: int = 1,
     limit: int = 10,
     db: Session = Depends(getDb),
-    current_user=Depends(check_admin_staff_role),
+    current_user=Depends(get_current_user),
 ):
+    if current_user.role not in ["admin", "staff", "headmajor ,teacher"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
+        )
+
     offset = (page - 1) * limit
 
     total_count = db.query(SubPLOs).count()
@@ -133,8 +139,15 @@ async def get_sub_plos_paged(
 async def get_sub_plo_by_id(
     sub_plo_id: int,
     db: Session = Depends(getDb),
-    current_user=Depends(check_admin_staff_role),
+    current_user=Depends(get_current_user),
 ):
+    
+    if current_user.role not in ["admin", "staff", "headmajor ,teacher"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
+        )
+    
     sub_plo = (
         db.query(SubPLOs)
         .options(joinedload(SubPLOs.parent_plo), joinedload(SubPLOs.courses))

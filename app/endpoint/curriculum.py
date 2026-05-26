@@ -24,10 +24,23 @@ async def create_curriculum(
             detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
         )
 
+
     if curriculum_in.curriculum_code:
         existing = db.query(Curriculum).filter(Curriculum.curriculum_code == curriculum_in.curriculum_code).first()
         if existing:
             raise HTTPException(status_code=400, detail="รหัสหลักสูตรนี้มีอยู่ในระบบแล้ว")
+
+    if curriculum_in.department_ids:
+        existing_depts = db.query(Departments).filter(Departments.id.in_(curriculum_in.department_ids)).all()
+        existing_ids = [d.id for d in existing_depts]
+
+        missing_ids = list(set(curriculum_in.department_ids) - set(existing_ids))
+        
+        if missing_ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"ไม่พบสาขา ID: {missing_ids} ในระบบ โปรดตรวจสอบความถูกต้อง"
+            )
 
     try:
         main_data = curriculum_in.model_dump(exclude={"department_ids"})
@@ -95,7 +108,9 @@ async def get_all_curriculums(
     query = db.query(Curriculum)
 
     if current_user.role == "headmajor":
-        query = query.filter(Curriculum.department_id == current_user.department_id)
+            query = query.join(CurriculumDepartment).filter(
+                CurriculumDepartment.department_id == current_user.department_id
+            )
         
     curriculums = query.all()
     return curriculums
@@ -123,11 +138,14 @@ async def get_curriculum(
         raise HTTPException(status_code=404, detail="ไม่พบหลักสูตรนี้ในระบบ")
     
     if current_user.role == "headmajor":
-        if curriculum.department_id != current_user.department_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, 
-                detail="คุณไม่มีสิทธิ์เข้าถึงข้อมูลหลักสูตรของสาขาอื่น"
-            )
+            user_dept_id = current_user.department_id
+            allowed_depts = [sd.department_id for sd in curriculum.shared_departments]
+            
+            if user_dept_id not in allowed_depts:
+                raise HTTPException(
+                    status_code=403, 
+                    detail="คุณไม่มีสิทธิ์ดูหลักสูตรที่ไม่ได้สังกัดสาขาของคุณ"
+                )
     
     return curriculum
 
