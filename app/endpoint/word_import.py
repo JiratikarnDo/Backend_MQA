@@ -138,7 +138,7 @@ async def importSubjectsFromWordFiles(
         db.commit()
 
         return {
-            "message": "นำเข้ารายวิชา จาก Word สำเร็จ" if onlyCode15 else "นำเข้ารายวิชาจาก Word สำเร็จ",
+            "message": "นำเข้ารายวิชาเสรี จาก Word สำเร็จ" if onlyCode15 else "นำเข้ารายวิชาศึกษาทั่วไป/วิชาเฉพาะ จาก Word สำเร็จ",
             "mode": "code15Only" if onlyCode15 else "excludeCode15",
             "createdCount": createdCount,
             "skippedExistingCount": skippedExistingCount,
