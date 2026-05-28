@@ -41,7 +41,7 @@ def build_course_assignment_response(item: RequestedCourseItem):
     primary_teacher = next((teacher for teacher in assigned_teachers if teacher.is_primary), None)
 
     return ApprovedCourseAssignmentResponse(
-        requested_course_item_id=item.id,
+        course_id=item.id,
         request_id=item.request_id,
         level=item.request.program_type,
         curriculum_name=item.request.curriculum_name,
@@ -49,7 +49,7 @@ def build_course_assignment_response(item: RequestedCourseItem):
         semester=item.request.semester,
         academic_year=item.request.academic_year,
         year_level=item.year_level,
-        course_id=item.course_id,
+        master_course_id=item.course_id,
         course_code=item.course_code_snapshot,
         course_name=item.course_name_snapshot,
         section_number=item.group_no,
@@ -94,40 +94,29 @@ async def get_approved_courses_for_assignment(
 async def get_assignable_teachers(
     db: Session = Depends(getDb),
     current_user: Users = Depends(get_current_user),
-    search: str | None = Query(None),
 ):
-    if current_user.role.lower() not in ["admin", "staff", "headmajor"]:
+    user_role = str(current_user.role or "").strip().lower()
+
+    if user_role not in ["admin", "staff", "headmajor"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="คุณไม่มีสิทธิ์ดูรายชื่ออาจารย์สำหรับมอบหมายรายวิชา",
         )
 
     query = db.query(Users).options(joinedload(Users.department)).filter(
-        Users.role.in_(["teacher", "headmajor", "headmajor"])
+        Users.role.in_(["teacher", "headmajor"]),
+        Users.department_id == current_user.department_id,
     )
-
-    if current_user.role.lower() not in ["admin", "staff"]:
-        query = query.filter(Users.department_id == current_user.department_id)
-
-    if search:
-        keyword = f"%{search.strip()}%"
-        query = query.filter(
-            (Users.first_name.ilike(keyword)) |
-            (Users.last_name.ilike(keyword)) |
-            (Users.email.ilike(keyword))
-        )
 
     teachers = query.order_by(Users.first_name.asc(), Users.last_name.asc()).all()
 
     return [
         AssignableTeacherResponse(
             id=teacher.id,
-            email=teacher.email,
             role=teacher.role,
             prefixname=teacher.prefixname,
             first_name=teacher.first_name,
             last_name=teacher.last_name,
-            department_id=teacher.department_id,
             department_name=teacher.department.department_name if teacher.department else None,
         )
         for teacher in teachers
@@ -154,16 +143,16 @@ async def get_my_primary_assigned_courses(
     return [build_course_assignment_response(item) for item in results]
 
 
-@router.get("/{requested_course_item_id}", response_model=ApprovedCourseAssignmentResponse)
+@router.get("/{course_id}", response_model=ApprovedCourseAssignmentResponse)
 async def get_course_assignment_by_id(
-    requested_course_item_id: int,
+    course_id: int,
     db: Session = Depends(getDb),
     current_user: Users = Depends(get_current_user),
 ):
     item = db.query(RequestedCourseItem).options(
         joinedload(RequestedCourseItem.request),
         joinedload(RequestedCourseItem.teacher_assignments).joinedload(CourseTeacherAssignment.teacher)
-    ).filter(RequestedCourseItem.id == requested_course_item_id).first()
+    ).filter(RequestedCourseItem.id == course_id).first()
 
     if not item:
         raise HTTPException(status_code=404, detail="ไม่พบรายการรายวิชาที่ระบุ")
@@ -194,9 +183,9 @@ async def get_course_assignment_by_id(
     return build_course_assignment_response(item)
 
 
-@router.post("/{requested_course_item_id}", response_model=CourseAssignmentSaveResponse)
+@router.post("/{course_id}", response_model=CourseAssignmentSaveResponse)
 async def create_course_assignments(
-    requested_course_item_id: int,
+    course_id: int,
     data: CourseAssignmentRequest,
     db: Session = Depends(getDb),
     current_user: Users = Depends(get_current_user),
@@ -210,12 +199,12 @@ async def create_course_assignments(
     if not data.teacher_ids:
         raise HTTPException(status_code=400, detail="กรุณาระบุอาจารย์ผู้สอนอย่างน้อย 1 คน")
 
-    return save_course_assignments(requested_course_item_id, data, db, current_user)
+    return save_course_assignments(course_id, data, db, current_user)
 
 
-@router.put("/{requested_course_item_id}", response_model=CourseAssignmentSaveResponse)
+@router.put("/{course_id}", response_model=CourseAssignmentSaveResponse)
 async def update_course_assignments(
-    requested_course_item_id: int,
+    course_id: int,
     data: CourseAssignmentRequest,
     db: Session = Depends(getDb),
     current_user: Users = Depends(get_current_user),
@@ -226,12 +215,12 @@ async def update_course_assignments(
             detail="เฉพาะหัวหน้าสาขาวิชาเท่านั้นที่สามารถมอบหมายอาจารย์ผู้สอนได้",
         )
 
-    return save_course_assignments(requested_course_item_id, data, db, current_user)
+    return save_course_assignments(course_id, data, db, current_user)
 
 
-@router.delete("/{requested_course_item_id}", response_model=CourseAssignmentSaveResponse)
+@router.delete("/{course_id}", response_model=CourseAssignmentSaveResponse)
 async def clear_course_assignments(
-    requested_course_item_id: int,
+    course_id: int,
     db: Session = Depends(getDb),
     current_user: Users = Depends(get_current_user),
 ):
@@ -242,18 +231,18 @@ async def clear_course_assignments(
         )
 
     data = CourseAssignmentRequest(teacher_ids=[])
-    return save_course_assignments(requested_course_item_id, data, db, current_user)
+    return save_course_assignments(course_id, data, db, current_user)
 
 
 def save_course_assignments(
-    requested_course_item_id: int,
+    course_id: int,
     data: CourseAssignmentRequest,
     db: Session,
     current_user: Users,
 ):
     item = db.query(RequestedCourseItem).options(
         joinedload(RequestedCourseItem.request)
-    ).filter(RequestedCourseItem.id == requested_course_item_id).first()
+    ).filter(RequestedCourseItem.id == course_id).first()
 
     if not item:
         raise HTTPException(status_code=404, detail="ไม่พบรายการรายวิชาที่ระบุ")
@@ -295,12 +284,12 @@ def save_course_assignments(
 
     try:
         db.query(CourseTeacherAssignment).filter(
-            CourseTeacherAssignment.requested_course_item_id == requested_course_item_id
+            CourseTeacherAssignment.requested_course_item_id == course_id
         ).delete(synchronize_session=False)
 
         for index, teacher_id in enumerate(teacher_ids):
             db.add(CourseTeacherAssignment(
-                requested_course_item_id=requested_course_item_id,
+                requested_course_item_id=course_id,
                 teacher_id=teacher_id,
                 assigned_by_id=current_user.id,
                 is_primary=index == 0,
@@ -312,7 +301,7 @@ def save_course_assignments(
         assignments = db.query(CourseTeacherAssignment).options(
             joinedload(CourseTeacherAssignment.teacher)
         ).filter(
-            CourseTeacherAssignment.requested_course_item_id == requested_course_item_id
+            CourseTeacherAssignment.requested_course_item_id == course_id
         ).order_by(CourseTeacherAssignment.order_index.asc()).all()
 
         assigned_teachers = []
@@ -340,7 +329,7 @@ def save_course_assignments(
         return CourseAssignmentSaveResponse(
             status="success",
             message=message,
-            requested_course_item_id=requested_course_item_id,
+            course_id=course_id,
             assigned_teachers=assigned_teachers,
             primary_teacher=primary_teacher,
             updated_at=datetime.now(timezone.utc),
