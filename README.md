@@ -14,5 +14,5 @@ Backend ระบบ MQA เขียนด้วย **FastAPI + SQLAlchemy + My
 ## 🛠️ Installation
 ```bash
 git clone https://github.com/JiratikarnDo/Backend_MQA.git
-cd ฺBackend_MQA
+cd Backend_MQA
 ```
