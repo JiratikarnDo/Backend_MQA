@@ -1,17 +1,18 @@
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.Interface.sql_db import getDb
 from app.dependencies.auth import check_admin_staff_role
 from app.endpoint.course import (
     SubjectDocxPayload,
-    resolveDepartmentId,
     saveSubjectPayload,
     subjectPayloadToResponse,
 )
 from app.models.courses import Courses
+from app.models.organization import Departments
 from app.models.users import Users
 from app.services.docxImportService import extractCoursesFromDocx
 from app.services.wordConvertService import convertWordFileToDocxBytes
@@ -29,20 +30,38 @@ def findExistingSubject(
     payload: SubjectDocxPayload,
     currentUser: Users,
 ) -> Optional[Courses]:
-    departmentId = resolveDepartmentId(db, payload.departmentId, currentUser)
     courseCode = str(payload.courseCode or "").strip()
 
     if not courseCode:
         raise HTTPException(status_code=400, detail="ไม่พบรหัสวิชา")
 
-    return (
-        db.query(Courses)
-        .filter(
-            Courses.course_code == courseCode,
-            Courses.department_id == departmentId,
-        )
-        .first()
-    )
+    return db.query(Courses).filter(Courses.course_code == courseCode).first()
+
+
+def getSubjectDepartmentName(db: Session, course: Courses) -> str:
+    department = db.query(Departments).filter(Departments.id == course.department_id).first()
+    return department.department_name if department else f"รหัสสาขา {course.department_id}"
+
+
+def subjectPayloadToSkippedResponse(db: Session, course: Courses, sourcePayload: Optional[dict] = None) -> dict:
+    response = subjectPayloadToResponse(course, sourcePayload)
+    response["departmentId"] = course.department_id
+    response["departmentName"] = getSubjectDepartmentName(db, course)
+    return response
+
+
+def getDuplicateCourseMessage(db: Session, error: IntegrityError) -> str:
+    params = error.params if isinstance(error.params, dict) else {}
+    courseCode = str(params.get("course_code") or "").strip()
+
+    if courseCode:
+        existingCourse = db.query(Courses).filter(Courses.course_code == courseCode).first()
+
+        if existingCourse:
+            departmentName = getSubjectDepartmentName(db, existingCourse)
+            return f"มีข้อมูลเอกสารนี้อยู่แล้วในสาขาวิชา {departmentName}"
+
+    return "มีข้อมูลเอกสารนี้อยู่แล้วในสาขาวิชาใดสาขาวิชาหนึ่ง"
 
 
 async def importSubjectsFromWordFiles(
@@ -116,7 +135,7 @@ async def importSubjectsFromWordFiles(
                     skippedExistingCount += 1
                     fileSkippedExistingCount += 1
                     skippedSubjects.append(
-                        subjectPayloadToResponse(existingCourse, payload.model_dump())
+                        subjectPayloadToSkippedResponse(db, existingCourse, payload.model_dump())
                     )
                     continue
 
@@ -151,6 +170,12 @@ async def importSubjectsFromWordFiles(
     except HTTPException:
         db.rollback()
         raise
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=getDuplicateCourseMessage(db, error),
+        )
     except Exception as error:
         db.rollback()
         raise HTTPException(

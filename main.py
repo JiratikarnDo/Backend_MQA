@@ -27,7 +27,7 @@ import app.models
 
 app = FastAPI()
 
-origins_raw = os.getenv("FRONEND_URL")
+origins_raw = os.getenv("FRONTEND_URL") or os.getenv("FRONEND_URL")
 origins = origins_raw.split(",") if origins_raw else []
 
 app.add_middleware(
