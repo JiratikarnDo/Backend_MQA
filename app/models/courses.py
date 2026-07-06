@@ -7,7 +7,7 @@ class Courses(base, TimestampMixin):
     __tablename__ = "courses"
     
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    course_code = Column(String(20), unique=True, nullable=True)
+    course_code = Column(String(20), unique=False, nullable=True)
     course_level = Column(String(100), nullable=True)
     course_name_th = Column(String(255), nullable=True)
     course_name_en = Column(String(255), nullable=True)

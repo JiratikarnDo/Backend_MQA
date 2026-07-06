@@ -21,19 +21,17 @@ class AssignedTeacherResponse(BaseModel):
 
 class AssignableTeacherResponse(BaseModel):
     id: int
-    email: str
     role: str
     prefixname: Optional[str] = None
     first_name: str
     last_name: str
-    department_id: Optional[int] = None
     department_name: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class ApprovedCourseAssignmentResponse(BaseModel):
-    requested_course_item_id: int
+    course_id: int
     request_id: int
     level: Optional[str] = None
     curriculum_name: str
@@ -41,7 +39,7 @@ class ApprovedCourseAssignmentResponse(BaseModel):
     semester: str
     academic_year: int
     year_level: Optional[int] = None
-    course_id: Optional[int] = None
+    master_course_id: Optional[int] = None
     course_code: Optional[str] = None
     course_name: Optional[str] = None
     section_number: Optional[int] = None
@@ -54,7 +52,7 @@ class ApprovedCourseAssignmentResponse(BaseModel):
 class CourseAssignmentSaveResponse(BaseModel):
     status: str
     message: str
-    requested_course_item_id: int
+    course_id: int
     assigned_teachers: List[AssignedTeacherResponse]
     primary_teacher: Optional[AssignedTeacherResponse] = None
     updated_at: datetime
