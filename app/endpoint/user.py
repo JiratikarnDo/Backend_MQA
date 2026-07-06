@@ -28,6 +28,15 @@ async def get_all_users(db: Session = Depends(getDb) , current_user=Depends(get_
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"เกิดข้อผิดพลาด: {str(e)}")
+
+@router.get("/users/{user_id}", response_model=UserResponse, summary="Get User Detail", dependencies=[Depends(check_admin_staff)])
+async def get_user_detail(user_id: int, db: Session = Depends(getDb)):
+    user = db.query(Users).filter(Users.id == user_id).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="ไม่พบผู้ใช้งานนี้ในระบบ")
+        
+    return user
     
 @router.post("/users/", summary="Add New User", dependencies=[Depends(check_admin_staff)])
 async def create_user(user_data: UserCreate, db: Session = Depends(getDb)):

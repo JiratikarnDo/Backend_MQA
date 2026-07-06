@@ -38,17 +38,6 @@ async def google_login(request: GoogleLoginRequest, db: Session = Depends(getDb)
             raise HTTPException(status_code=500, detail="ไม่สามารถเชื่อมต่อฐานข้อมูลมหาลัยได้")
             
         teachers_list = rmutto_res.get("data", [])
-
-        # mock_teacher = {
-        #     "OFFICEREMAIL": user_email, 
-        #     "DEPARTMENTNAME": "สำนักงานกลาง",  
-        #     "DEPARTMENTID": "999",       
-        #     "PREFIXNAME": "Admin",
-        #     "OFFICERNAME": "โด้",
-        #     "OFFICERSURNAME": "ยอดนักเทสต์"
-        # }
-        # teachers_list.append(mock_teacher)
-        
         matched_teacher = None
         for t in teachers_list:
             if t.get("OFFICEREMAIL") == user_email:
