@@ -58,29 +58,11 @@ def normalizeSubjectCategory(subjectCategory: Optional[str]) -> str:
     return "specific"
 
 
-def getDepartmentDisplayName(department: Optional[Departments]) -> str:
-    if not department:
-        return ""
-
-    return (
-        getattr(department, "department_name", None)
-        or getattr(department, "major_name", None)
-        or getattr(department, "name", None)
-        or ""
-    )
-
-
-def buildDepartmentNameMap(db: Session, departmentIds: List[int]) -> dict:
-    cleanDepartmentIds = sorted({int(departmentId) for departmentId in departmentIds if departmentId})
-
-    if not cleanDepartmentIds:
-        return {}
-
-    departments = db.query(Departments).filter(Departments.id.in_(cleanDepartmentIds)).all()
-    return {department.id: getDepartmentDisplayName(department) for department in departments}
-
-
-def resolveDepartmentId(db: Session, departmentId: Optional[int], currentUser: Users) -> int:
+def resolveDepartmentId(
+    db: Session,
+    departmentId: Optional[int],
+    currentUser: Users,
+) -> int:
     candidateIds = []
 
     if departmentId:
@@ -95,7 +77,10 @@ def resolveDepartmentId(db: Session, departmentId: Optional[int], currentUser: U
         if department:
             return department.id
 
-    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ไม่พบรหัสสาขา/ภาควิชาในระบบ กรุณาเลือกสาขาที่มีอยู่จริง หรือให้ผู้ใช้มี department_id")
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="ไม่พบรหัสสาขา/ภาควิชาในระบบ กรุณาเลือกสาขาที่มีอยู่จริง หรือให้ผู้ใช้มี department_id",
+    )
 
 
 def getOrCreateCategory(db: Session, subjectCategory: Optional[str]) -> SubjectCategory:
@@ -112,13 +97,24 @@ def getOrCreateCategory(db: Session, subjectCategory: Optional[str]) -> SubjectC
     return category
 
 
-def getOrCreateSubGroup(db: Session, category: SubjectCategory, subCategory: Optional[str]) -> Optional[SubjectSubGroup]:
+def getOrCreateSubGroup(
+    db: Session,
+    category: SubjectCategory,
+    subCategory: Optional[str],
+) -> Optional[SubjectSubGroup]:
     subGroupName = str(subCategory or "").strip()
 
     if not subGroupName:
         return None
 
-    subGroup = db.query(SubjectSubGroup).filter(SubjectSubGroup.name == subGroupName, SubjectSubGroup.category_id == category.id).first()
+    subGroup = (
+        db.query(SubjectSubGroup)
+        .filter(
+            SubjectSubGroup.name == subGroupName,
+            SubjectSubGroup.category_id == category.id,
+        )
+        .first()
+    )
 
     if subGroup:
         return subGroup
@@ -140,14 +136,6 @@ def subjectPayloadToResponse(course: Courses, sourcePayload: Optional[dict] = No
     sourcePayload = sourcePayload or {}
     categoryName = course.category.name if course.category else ""
     subGroupName = course.sub_group.name if course.sub_group else ""
-    departmentName = (
-        sourcePayload.get("departmentName")
-        or sourcePayload.get("department_name")
-        or sourcePayload.get("majorName")
-        or sourcePayload.get("major_name")
-        or getDepartmentDisplayName(getattr(course, "department", None))
-        or ""
-    )
 
     if "ศึกษาทั่วไป" in categoryName:
         subjectCategory = "generalEducation"
@@ -159,20 +147,9 @@ def subjectPayloadToResponse(course: Courses, sourcePayload: Optional[dict] = No
     return {
         "id": course.id,
         "courseCode": course.course_code or "",
-        "course_code": course.course_code or "",
         "curriculumLevel": course.course_level or sourcePayload.get("curriculumLevel") or "bachelor",
-        "course_level": course.course_level or sourcePayload.get("curriculumLevel") or "bachelor",
         "courseNameThai": course.course_name_th or "",
-        "course_name_th": course.course_name_th or "",
         "courseNameEnglish": course.course_name_en or "",
-        "course_name_en": course.course_name_en or "",
-        "departmentId": course.department_id,
-        "department_id": course.department_id,
-        "departmentName": departmentName,
-        "department_name": departmentName,
-        "majorName": departmentName,
-        "major_name": departmentName,
-        "department": {"id": course.department_id, "department_name": departmentName, "departmentName": departmentName, "name": departmentName} if departmentName else None,
         "subjectCategory": sourcePayload.get("subjectCategory") or subjectCategory,
         "subCategory": subGroupName or sourcePayload.get("subCategory") or "",
         "studyLine": course.subject_line or sourcePayload.get("studyLine") or "สายวิทยาศาสตร์",
@@ -180,38 +157,37 @@ def subjectPayloadToResponse(course: Courses, sourcePayload: Optional[dict] = No
         "lectureHours": course.credit_lecture or 0,
         "labHours": course.credit_lab or 0,
         "selfStudyHours": course.credit_self_study or 0,
-        "credit_total": course.credit_total or 0,
-        "credit_lecture": course.credit_lecture or 0,
-        "credit_lab": course.credit_lab or 0,
-        "credit_self_study": course.credit_self_study or 0,
         "descriptionThai": course.description_thai or "",
         "descriptionEnglish": course.description_english or "",
-        "description_thai": course.description_thai or "",
-        "description_english": course.description_english or "",
         "hasPreSubjects": "yes" if course.prerequisite else "no",
         "preSubjects": [course.prerequisite] if course.prerequisite else [],
         "hasCoSubjects": "yes" if course.corequisite else "no",
         "coSubjects": [course.corequisite] if course.corequisite else [],
-        "prerequisite": course.prerequisite or "",
-        "corequisite": course.corequisite or "",
-        "category_id": course.category_id,
-        "sub_group_id": course.sub_group_id,
-        "subject_line": course.subject_line or "",
-        "created_at": course.created_at if hasattr(course, "created_at") else None,
-        "update_at": course.update_at if hasattr(course, "update_at") else None,
     }
 
 
-def saveSubjectPayload(db: Session, payload: SubjectDocxPayload, currentUser: Users) -> tuple[Courses, bool]:
+def saveSubjectPayload(
+    db: Session,
+    payload: SubjectDocxPayload,
+    currentUser: Users,
+) -> tuple[Courses, bool]:
     departmentId = resolveDepartmentId(db, payload.departmentId, currentUser)
     category = getOrCreateCategory(db, payload.subjectCategory)
     subGroup = getOrCreateSubGroup(db, category, payload.subCategory)
+
     courseCode = str(payload.courseCode or "").strip()
 
     if not courseCode:
         raise HTTPException(status_code=400, detail="ไม่พบรหัสวิชา")
 
-    course = db.query(Courses).filter(Courses.course_code == courseCode, Courses.department_id == departmentId).first()
+    course = (
+        db.query(Courses)
+        .filter(
+            Courses.course_code == courseCode,
+            Courses.department_id == departmentId,
+        )
+        .first()
+    )
     isCreated = course is None
 
     if course is None:
@@ -241,7 +217,11 @@ def saveSubjectPayload(db: Session, payload: SubjectDocxPayload, currentUser: Us
 
 
 @router.post("/add-subject")
-async def add_subject_from_form(payload: SubjectDocxPayload, db: Session = Depends(getDb), current_user: Users = Depends(check_admin_staff_role)):
+async def add_subject_from_form(
+    payload: SubjectDocxPayload,
+    db: Session = Depends(getDb),
+    current_user: Users = Depends(check_admin_staff_role),
+):
     try:
         course, isCreated = saveSubjectPayload(db, payload, current_user)
         db.commit()
@@ -268,7 +248,11 @@ async def get_courses(
     size: int = Query(1000, ge=1, le=2000, description="จำนวนข้อมูลต่อหน้า"),
     departmentId: Optional[int] = Query(None, description="รหัสสาขา/ภาควิชาที่ต้องการดึงรายวิชา"),
 ):
-    query = db.query(Courses).options(joinedload(Courses.category), joinedload(Courses.sub_group))
+    query = (
+        db.query(Courses)
+        .options(joinedload(Courses.category), joinedload(Courses.sub_group))
+    )
+
     userRole = str(current_user.role or "").lower()
 
     if userRole in ["admin", "staff", "headmajor"]:
@@ -278,22 +262,16 @@ async def get_courses(
         query = query.filter(Courses.department_id == current_user.department_id)
 
     offset = (page - 1) * size
-    courses = query.order_by(Courses.course_code.asc()).offset(offset).limit(size).all()
-    departmentNameMap = buildDepartmentNameMap(db, [course.department_id for course in courses])
 
-    return [
-        subjectPayloadToResponse(
-            course,
-            {
-                "departmentName": departmentNameMap.get(course.department_id, ""),
-                "department_name": departmentNameMap.get(course.department_id, ""),
-                "majorName": departmentNameMap.get(course.department_id, ""),
-                "major_name": departmentNameMap.get(course.department_id, ""),
-            },
-        )
-        for course in courses
-    ]
+    courses = (
+        query
+        .order_by(Courses.course_code.asc())
+        .offset(offset)
+        .limit(size)
+        .all()
+    )
 
+    return [subjectPayloadToResponse(course) for course in courses]
 
 @router.get("/{course_id}")
 async def get_course_by_id(course_id: int, db: Session = Depends(getDb), current_user: Users = Depends(get_current_user)):
@@ -305,24 +283,19 @@ async def get_course_by_id(course_id: int, db: Session = Depends(getDb), current
     if not course:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ไม่พบรายวิชารหัส ID: {course_id} ในระบบ")
 
-    departmentNameMap = buildDepartmentNameMap(db, [course.department_id])
-    return subjectPayloadToResponse(
-        course,
-        {
-            "departmentName": departmentNameMap.get(course.department_id, ""),
-            "department_name": departmentNameMap.get(course.department_id, ""),
-            "majorName": departmentNameMap.get(course.department_id, ""),
-            "major_name": departmentNameMap.get(course.department_id, ""),
-        },
-    )
+    return course
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_course(data: CourseCreate, db: Session = Depends(getDb), current_user=Depends(check_admin_staff_role)):
-    existing_course = db.query(Courses).filter(Courses.course_code == data.course_code).first()
+async def create_course(
+    data: CourseCreate,
+    db: Session = Depends(getDb),
+    current_user=Depends(check_admin_staff_role),
+):
+    existing_course = (
+        db.query(Courses).filter(Courses.course_code == data.course_code).first()
+    )
 
-    if existing_course:
-        raise HTTPException(status_code=400, detail=f"รหัสวิชา {data.course_code} มีอยู่ในระบบแล้ว ไม่สามารถสร้างซ้ำได้")
 
     new_course = Courses(**data.model_dump())
     db.add(new_course)
