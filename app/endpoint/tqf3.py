@@ -93,6 +93,7 @@ async def create_tqf3(
             location=data.location,
             pre_requisite=data.pre_requisite,
             co_requisite=data.co_requisite,
+            updated_at=data.updated_at,
             course_description=data.course_description,
             objectives=data.objectives,
             plo_mapping=data.plo_mapping,
@@ -116,6 +117,42 @@ async def create_tqf3(
             for inst in data.instructors:
                 if inst.name:
                     db.add(TQF3Instructor(tqf3_id=new_tqf3.id, name=inst.name))
+
+        if data.clos:
+            for clo in data.clos:
+                if clo.detail:
+                    db.add(TQF3CLO(tqf3_id=new_tqf3.id, number=clo.number, detail=clo.detail))
+
+        if data.development_plans:
+            for dev in data.development_plans:
+                db.add(TQF3Development(
+                    tqf3_id=new_tqf3.id,
+                    clo_number=dev.clo_number,
+                    teaching_strategy=dev.teaching_strategy,
+                    evaluation_strategy=dev.evaluation_strategy
+                ))
+
+        if data.lesson_plans:
+            for plan in data.lesson_plans:
+                db.add(TQF3LessonPlan(
+                    tqf3_id=new_tqf3.id,
+                    week=plan.week,
+                    topic=plan.topic,
+                    clos=plan.clos,
+                    hours=plan.hours,
+                    activities_media=plan.activities_media,
+                    instructor_name=plan.instructor_name
+                ))
+
+        if data.evaluation_plans:
+            for eval_item in data.evaluation_plans:
+                db.add(TQF3Evaluation(
+                    tqf3_id=new_tqf3.id,
+                    activity=eval_item.activity,
+                    clo_number=eval_item.clo_number,
+                    evaluation_week=eval_item.evaluation_week,
+                    proportion_percent=eval_item.proportion_percent
+                ))
 
         db.commit()
         return {"status": "success", "id": new_tqf3.id}

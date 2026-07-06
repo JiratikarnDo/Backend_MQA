@@ -18,6 +18,7 @@ class Departments(base , TimestampMixin):
     id = Column(Integer, primary_key=True, index=True)
     faculty_id = Column(Integer, ForeignKey("faculties.id", ondelete="CASCADE"))
     department_name = Column(String(255), nullable=False) 
+    external_id = Column(String(50), nullable=True)
     
     faculty = relationship("Faculties", back_populates="departments")
     

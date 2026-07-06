@@ -114,7 +114,7 @@ async def get_sub_plos_paged(
     db: Session = Depends(getDb),
     current_user=Depends(get_current_user),
 ):
-    if current_user.role not in ["admin", "staff", "headmajor ,teacher"]:
+    if current_user.role not in ["admin", "staff", "headmajor" ,"teacher"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",
@@ -142,7 +142,7 @@ async def get_sub_plo_by_id(
     current_user=Depends(get_current_user),
 ):
     
-    if current_user.role not in ["admin", "staff", "headmajor ,teacher"]:
+    if current_user.role not in ["admin", "staff", "headmajor" ,"teacher"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้",

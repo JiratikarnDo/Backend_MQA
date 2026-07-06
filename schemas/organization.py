@@ -6,7 +6,6 @@ class FacultySimpleResponse(BaseModel):
     faculty_name: str
     model_config = ConfigDict(from_attributes=True)
 
-# 2. Schema ของสาขา
 class DepartmentResponse(BaseModel):
     id: int
     department_name: str
@@ -18,7 +17,7 @@ class DepartmentResponse(BaseModel):
 class DepartmentResponseSimple(BaseModel):
     id: int
     department_name: str
-    faculty_id: int
+    faculty_id: Optional[int] = None
     faculty_name: Optional[str] = None 
 
     model_config = ConfigDict(from_attributes=True)
