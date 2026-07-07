@@ -10,6 +10,8 @@ class RoleEnum(str, Enum):
     staff = "staff"
     teacher = "teacher"
     headmajor = "headmajor"
+    dean = "dean"
+
 
 class UserProfileResponse(BaseModel):
     id: int
