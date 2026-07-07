@@ -31,7 +31,6 @@ class UserCreate(BaseModel):
     first_name: str
     last_name: str
     department_id: int
-    role: str = "teacher"
 
 class UserUpdateInfo(BaseModel):
     prefixname: Optional[str] = None

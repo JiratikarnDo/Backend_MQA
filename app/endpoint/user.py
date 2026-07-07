@@ -81,3 +81,13 @@ async def update_user_role(user_id: int, role_data: UserUpdateRole, db: Session 
     user.role = role_data.role
     db.commit()
     return {"message": "เปลี่ยนสิทธิ์การใช้งานสำเร็จ"}
+    
+@router.delete("/users/{user_id}", summary="Delete User", dependencies=[Depends(check_admin_staff)])
+async def delete_user(user_id: int, db: Session = Depends(getDb)):
+    user = db.query(Users).filter(Users.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="ไม่พบผู้ใช้งานนี้")
+        
+    db.delete(user)
+    db.commit()
+    return {"message": "ลบผู้ใช้งานสำเร็จ"}
