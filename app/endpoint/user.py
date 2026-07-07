@@ -18,7 +18,6 @@ async def get_all_users(db: Session = Depends(getDb) , current_user=Depends(get_
     
     try:
         query = db.query(Users).filter(
-            Users.role.notin_(["admin", "staff"]),
             Users.id != current_user.id
         )
 
