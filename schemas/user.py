@@ -1,6 +1,15 @@
+from enum import Enum
+
 from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from schemas.organization import DepartmentResponse, DepartmentResponseSimple
+
+
+class RoleEnum(str, Enum):
+    admin = "admin"
+    staff = "staff"
+    teacher = "teacher"
+    headmajor = "headmajor"
 
 class UserProfileResponse(BaseModel):
     id: int
@@ -11,7 +20,6 @@ class UserProfileResponse(BaseModel):
     department: Optional[DepartmentResponse] = None
 
     model_config = ConfigDict(from_attributes=True)
-
 
 class UserResponse(BaseModel):
     id: int
@@ -31,6 +39,7 @@ class UserCreate(BaseModel):
     first_name: str
     last_name: str
     department_id: int
+    role: RoleEnum = RoleEnum.teacher
 
 class UserUpdateInfo(BaseModel):
     prefixname: Optional[str] = None
