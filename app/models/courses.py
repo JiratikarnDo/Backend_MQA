@@ -31,5 +31,4 @@ class Courses(base, TimestampMixin):
 
     category = relationship("SubjectCategory")
     sub_group = relationship("SubjectSubGroup")
-    department = relationship("Departments")
     sub_plos = relationship("SubPLOs", secondary="sub_plo_courses", back_populates="courses")
