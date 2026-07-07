@@ -68,6 +68,7 @@ class CourseUpdate(CourseBase):
 class CourseResponse(CourseBase):
     id: int
     department_id: int
+    department_name: str | None = None
     created_at: datetime
     update_at: Optional[datetime] = None
 

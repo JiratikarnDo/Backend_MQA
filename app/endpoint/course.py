@@ -163,6 +163,8 @@ def subjectPayloadToResponse(course: Courses, sourcePayload: Optional[dict] = No
         "preSubjects": [course.prerequisite] if course.prerequisite else [],
         "hasCoSubjects": "yes" if course.corequisite else "no",
         "coSubjects": [course.corequisite] if course.corequisite else [],
+        "departmentId": course.department_id,
+        "departmentName": course.department.department_name if course.department else "ไม่ระบุสาขา"
     }
 
 
@@ -250,7 +252,10 @@ async def get_courses(
 ):
     query = (
         db.query(Courses)
-        .options(joinedload(Courses.category), joinedload(Courses.sub_group))
+        .options(joinedload(Courses.category), 
+                 joinedload(Courses.sub_group),
+                 joinedload(Courses.department)
+                 )
     )
 
     userRole = str(current_user.role or "").lower()
@@ -278,7 +283,10 @@ async def get_course_by_id(course_id: int, db: Session = Depends(getDb), current
     if current_user.role not in ["admin", "staff", "headmajor"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="เฉพาะเจ้าหน้าที่หรือผู้ดูแลระบบเท่านั้นที่ทำรายการนี้ได้")
 
-    course = db.query(Courses).options(joinedload(Courses.category), joinedload(Courses.sub_group)).filter(Courses.id == course_id).first()
+    course = db.query(Courses).options(joinedload(Courses.category),
+                                       (joinedload(Courses.department),
+                                       joinedload(Courses.sub_group)).filter(Courses.id == course_id).first()
+                                       )
 
     if not course:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"ไม่พบรายวิชารหัส ID: {course_id} ในระบบ")
